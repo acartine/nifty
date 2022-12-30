@@ -1,0 +1,57 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_PASSWORD=mypassword
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:latest
+    environment:
+      - REDIS_PERSISTENCE=1
+      - REDIS_PERSISTENCE_DB=1
+      - REDIS_PERSISTENCE_DB_BACKEND=postgresql
+      - REDIS_PERSISTENCE_DB_USER=postgres
+      - REDIS_PERSISTENCE_DB_PASSWORD=mypassword
+      - REDIS_PERSISTENCE_DB_HOST=postgres
+      - REDIS_PERSISTENCE_DB_PORT=5432
+      - REDIS_PERSISTENCE_DB_NAME=redis
+    ports:
+      - "6379:6379"
+    links:
+      - postgres
+
+  flask:
+    build: .
+    command: gunicorn -b :5000 app:app
+    volumes:
+      - .:/app
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/app/static
+    ports:
+      - "80:80"
+    depends_on:
+      - flask
+    links:
+      - flask:flask
+
+volumes:
+  static:
+  postgres-data:
+
