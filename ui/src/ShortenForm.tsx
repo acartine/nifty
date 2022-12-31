@@ -69,6 +69,7 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
         <Grid container spacing={2} paddingTop={2} alignItems='center'>
           <Grid item xs={10}>
             <TextField
+              autoFocus={!payload}
               label="Long URL"
               value={longUrl}
               fullWidth
@@ -83,7 +84,7 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
           {urlLink &&
             <Grid item xs={12}>
               <Box sx={{ alignItems: 'center', paddingLeft: 2, display: 'inline-flex' }}>
-                <Link href={urlLink} target="_blank" underline={'hover'} rel={'noreferrer'}>
+                <Link href={urlLink} target="_blank" underline={'hover'} rel={'noreferrer'} data-testid='short-url-link'>
                   <Typography>
                     {urlLink}
                   </Typography>
