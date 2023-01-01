@@ -30,9 +30,7 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
   };
 
   // Define a function to handle form submission
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
+  const onSubmit = () => {
     // Send a POST request to the /shorten endpoint to create a new short URL
     fetch('/shorten', {
       method: 'POST',
@@ -48,28 +46,35 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
 
   //hack for local dev
   let host;
-  if (payload) {
+  if (!!payload) {
     host = window.location.host;
     if (host.endsWith('3000')) {
       host = host.replace('3000', '5000')
     }
   }
-  const urlLink = payload ? window.location.protocol + '//' + host + '/' + payload.short_url : null;
+  const urlLink = !!payload ? window.location.protocol + '//' + host + '/' + payload.short_url : null;
 
   const copyToClipboard = () => {
-    if (urlLink) {
+    if (!!urlLink) {
       navigator.clipboard.writeText(urlLink)
       setCopied(true)
     }
   }
 
+  const onClear = () => {
+    setLongUrl('')
+    setPayload(null)
+    setCopied(false)
+  }
+
   return (
     <div>
-      <form onSubmit={handleSubmit}>
         <Grid container spacing={2} paddingTop={2} alignItems='center'>
           <Grid item xs={10}>
             <TextField
+              data-testid="long-url-textfield"
               autoFocus={!payload}
+              disabled={!!payload}
               label="Long URL"
               value={longUrl}
               fullWidth
@@ -77,9 +82,16 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
             />
           </Grid>
           <Grid item xs={2} sx={{ alignItems: 'center' }}>
-            <Button type="submit" variant="contained" color="primary">
-              Shorten
-            </Button>
+            {!!payload ? (
+              <Button onClick={onClear} variant="contained" color="primary" data-testid="clear-button">
+                Clear
+              </Button>
+            ) : (
+              <Button onClick={onSubmit} variant="contained" color="primary" data-testid="shorten-button">
+                Shorten
+              </Button>
+            )
+            }
           </Grid>
           {urlLink &&
             <Grid item xs={12}>
@@ -89,14 +101,13 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
                     {urlLink}
                   </Typography>
                 </Link>
-                <Button sx={{ marginLeft: 2 }} onClick={copyToClipboard} variant="contained" color="primary">
+                <Button sx={{ marginLeft: 2 }} onClick={copyToClipboard} variant="contained" color="primary" data-testid='copy-to-clipboard'>
                   Copy
                 </Button>
               </Box>
             </Grid>
           }
         </Grid>
-      </form>
       <Snackbar
         open={copied}
         autoHideDuration={6000}
@@ -107,7 +118,7 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
           {urlLink} copied to clipboard.
         </Alert>
       </Snackbar>
-    </div>
+    </div >
   );
 };
 

@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-.PHONY: build build-py build-ui build-docker prepare run run-app-local run-dev run-datastore run-ui-dev stop stop-datastore test
+.PHONY: build build-py build-ui build-docker prepare run run-app-local run-dev run-datastore run-ui-dev stop stop-datastore test wipe-db
 	
 build-py:
 	pipenv install
@@ -38,7 +38,10 @@ stop-datastore:
 
 test: 
 	make stop
+	make wipe-db
 	make run
 	pushd ui && yarn cypress run && popd
 	make stop
-	
+
+wipe-db:
+	docker volume rm -f urlshortener_postgres-data
