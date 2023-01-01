@@ -10,6 +10,8 @@ Sample URL shortener meant to provide a solid foundation for a horizontally scal
 - node >= 19.3 https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
 - npm >= 9.2
 - yarn >= 1.22.19
+- docker engine
+- docker compose
 
 ### Quick Start
 For an overview of the app, run
@@ -63,4 +65,19 @@ make stop-datastore
 ```
 
 To release the docker resources.
+
+### Testing
+In the interest in time, only E2E tests were developed for this app.  This allows us to smoke test the UI and backend together in a production-like deployment.  We would certainly want to add API tests, which would be faster at validating backend functionality and probably more diverse.  We should also add unit tests, which were avoided because of the minimal scope and lack of business logic.
+
+Tests are managed/run by Cypress and located at ./ui/cypress/e2e
+
+To develop tests, run
+
+```
+make build run
+cd ui
+yarn run cypress open
+```
+
+Then you can edit tests and automatically rerun them when you save them.
 
