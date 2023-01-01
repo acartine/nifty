@@ -4,8 +4,7 @@ Sample URL shortener meant to provide a solid foundation for a horizontally scal
 
 ### Requirements
 
-- docker engine
-- docker compose
+- docker (desktop OR engine+compose)
 - python 3
 - pip 3
 - pipenv https://pipenv.pypa.io/en/latest/install/ (make sure you you add `~/.local/bin` to your PATH!)
@@ -80,4 +79,25 @@ yarn run cypress open
 ```
 
 Then you can edit tests and automatically rerun them when you save them.
+
+### Other Notes
+#### Running Tests Against Local UI/Backend
+The Cypress tests look for a [host variable](ui/cypress/e2e/happy-path.cy.ts#L4).  This is so we can point them to other environments, such as CI/CD or production.  You can also use this to develop cypress tests when using the configuration above under local development.
+
+With the local development configuration running, you can run
+
+```
+cd ui && yarn run cypress open --env host='localhost:3000'
+```
+
+Then you will be able to edit tests and code and immediately see the results.
+
+#### Datastore Persistence
+The datastore persists via a Docker volume.  When `make test` is executed, it wipes the datestore to ensure repeatable test results.  This is good to keep in mind if you run tests and then find all your links are gone.  If you find this behavior annoying, the make commands can be further refactored so that wiping is optional.
+
+You can also manually wipe the datastore at any time (provided you have killed all the running containers) by running
+
+```
+make wipe-db
+```
 
