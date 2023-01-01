@@ -40,7 +40,7 @@ test:
 	make stop
 	make wipe-db
 	make run
-	pushd ui && yarn cypress run && popd
+	pushd ui && yarn cypress run ${ARGS} && popd
 	make stop
 
 wipe-db:
