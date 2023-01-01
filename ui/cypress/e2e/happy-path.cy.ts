@@ -1,7 +1,7 @@
 describe('happy path', () => {
   it('should create short url that successfully links to long url', () => {
     const longUrl = 'https://www.google.com/search?q=how+do+i+hit+long+shots+in+fifa+23'
-    cy.visit('http://localhost/')
+    cy.visit(Cypress.env('host') ?? 'http://localhost:8080/')
     cy.get('[data-testid="long-url-textfield"]').type(longUrl)
     cy.get('[data-testid="shorten-button"]').click()
     cy.get('[data-testid="copy-to-clipboard"]').click()

@@ -4,14 +4,14 @@ Sample URL shortener meant to provide a solid foundation for a horizontally scal
 
 ### Requirements
 
-- python 3
-- pip 3
-- pipenv https://pipenv.pypa.io/en/latest/install/
-- node >= 19.3 https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
-- npm >= 9.2
-- yarn >= 1.22.19
 - docker engine
 - docker compose
+- python 3
+- pip 3
+- pipenv https://pipenv.pypa.io/en/latest/install/ (make sure you you add `~/.local/bin` to your PATH!)
+- node >= 19.3 https://docs.npmjs.com/downloading-and-installing-node-js-and-npm
+- npm >= 9.2
+- yarn >= 1.22.19 (`npm install --global yarn`)
 
 ### Quick Start
 For an overview of the app, run
@@ -24,7 +24,7 @@ If you want to play with the app, you can run
 ```
 make build run
 ```
-and open a browser at http://localhost
+and open a browser at http://localhost:8080
 
 when you are done, run
 
@@ -56,7 +56,7 @@ and in a separate terminal
 make run-ui-dev
 ```
 
-Then you can change code, save it, and immediately play with it.
+This will launch the development web app at http://localhost:3000.  Then you can change code, save it, and immediately play with it.
 
 When you are finished, run
 

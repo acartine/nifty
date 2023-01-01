@@ -28,7 +28,7 @@ run-datastore:
 run-dev: run-datastore run-app-local
 
 run-ui-dev:
-	yarn start
+	pushd ui && yarn start
 
 stop:
 	docker compose down
