@@ -57,7 +57,7 @@ def shorten():
     # Check if the long URL has already been shortened
     short_url = r.get(long_url)
     if short_url:
-        print(f"found {short_url}")
+        logging.debug(f"found {short_url}")
         # Return the existing short URL if it has been shortened before
         return jsonify({'short_url': short_url})
 
