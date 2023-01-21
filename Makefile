@@ -20,7 +20,7 @@ run:
 	docker compose up -d
 
 run-app-local:
-	pipenv run flask run
+	pipenv run flask --debug run
 
 run-datastore:
 	docker compose -f docker-compose-local.yml up -d
@@ -44,4 +44,4 @@ test:
 	make stop
 
 wipe-db:
-	docker volume rm -f urlshortener_postgres-data
+	docker volume rm -f nifty_postgres-data
