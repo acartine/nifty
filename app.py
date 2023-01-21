@@ -1,5 +1,5 @@
 import os
-from flask import Flask, send_from_directory, redirect, request, jsonify
+from flask import Flask, send_from_directory, redirect, request, jsonify, Response
 import random
 import string
 import logging
@@ -74,7 +74,7 @@ def shorten():
     long_to_short.set(long_url, short_url)
     short_to_long.set(short_url, long_url)
 
-    return jsonify({'short_url': short_url})
+    return jsonify({'short_url': short_url}), 201
 
 
 @app.route('/<short_url>', methods=['GET'])
