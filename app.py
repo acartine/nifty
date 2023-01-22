@@ -1,14 +1,17 @@
 import os
-from flask import Flask, send_from_directory, redirect, request, jsonify, Response
+from flask import Flask, send_from_directory, redirect, jsonify
 import random
 import string
 import logging
 import sys
+
+from flask_pydantic import validate
+from pydantic import BaseModel, HttpUrl
+
 from store import Store
 
 long_to_short = Store("l2s")
 short_to_long = Store("s2l")
-
 
 # TODO set up blueprints
 
@@ -27,6 +30,10 @@ root.addHandler(handler)
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
+
+
+class ShortenRequest(BaseModel):
+    long_url: HttpUrl
 
 
 @app.route('/')
@@ -55,9 +62,10 @@ def static_files(subpath):
 
 
 @app.route('/shorten', methods=['POST'])
-def shorten():
+@validate()
+def shorten(body: ShortenRequest):
     # Get the long URL from the request
-    long_url = request.json['long_url']
+    long_url = body.long_url
 
     # Check if the long URL has already been shortened
     short_url = long_to_short.get(long_url)
