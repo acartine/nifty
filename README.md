@@ -66,9 +66,20 @@ make stop-datastore
 To release the docker resources.
 
 ### Testing
-In the interest in time, only E2E tests were developed for this app.  This allows us to smoke test the UI and backend together in a production-like deployment.  We would certainly want to add API tests, which would be faster at validating backend functionality and probably more diverse.  We should also add unit tests, which were avoided because of the minimal scope and lack of business logic.
+#### Integration
+Integration tests are a relatively fast way of validating the backend API.
 
-Tests are managed/run by Cypress and located at ./ui/cypress/e2e
+To run them you can use
+
+```
+make test-integration
+```
+
+This will wipe the datastore, launch the datastore, and execute the integration tests.
+
+#### E2E
+E2E Tests are managed/run by Cypress and located at ./ui/cypress/e2e.
+This allows us to smoke test the UI and backend together in a production-like deployment.  
 
 To develop tests, run
 
@@ -81,7 +92,7 @@ yarn run cypress open
 Then you can edit tests and automatically rerun them when you save them.
 
 ### Other Notes
-#### Running Tests Against Local UI/Backend
+#### Running E2E Tests Against Local UI/Backend
 The Cypress tests look for a [host variable](ui/cypress/e2e/happy-path.cy.ts#L4).  This is so we can point them to other environments, such as CI/CD or production.  You can also use this to develop cypress tests when using the configuration above under local development.
 
 With the local development configuration running, you can run
@@ -93,7 +104,7 @@ cd ui && yarn run cypress open --env host='localhost:3000'
 Then you will be able to edit tests and code and immediately see the results.
 
 #### Datastore Persistence
-The datastore persists via a Docker volume.  When `make test` is executed, it wipes the datestore to ensure repeatable test results.  This is good to keep in mind if you run tests and then find all your links are gone.  If you find this behavior annoying, the make commands can be further refactored so that wiping is optional.
+The datastore persists via a Docker volume.  When `make test` or `make test-integration` is executed, it wipes the datestore to ensure repeatable test results.  This is good to keep in mind if you run tests and then find all your links are gone.  If you find this behavior annoying, the make commands can be further refactored so that wiping is optional.
 
 You can also manually wipe the datastore at any time (provided you have killed all the running containers) by running
 
