@@ -8,6 +8,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import isURL from 'validator/lib/isURL';
 
 interface ShortenFormProps { }
 
@@ -67,27 +68,34 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
     setCopied(false)
   }
 
+  const isValidUrl =  isURL(longUrl)
+  const canShorten = !!longUrl && isValidUrl
+  const isError = !!longUrl && !isValidUrl
+
   return (
     <div>
-        <Grid container spacing={2} paddingTop={2} alignItems='center'>
+        <Grid container spacing={2} paddingTop={2} alignItems='top'>
           <Grid item xs={10}>
             <TextField
               data-testid="long-url-textfield"
               autoFocus={!payload}
               disabled={!!payload}
+              error={isError}
+              helperText={isError ? 'Please enter a valid URL' : undefined}
+              inputRef={input => input && !payload && input.focus() }
               label="Long URL"
               value={longUrl}
               fullWidth
               onChange={(event) => setLongUrl(event.target.value)}
             />
           </Grid>
-          <Grid item xs={2} sx={{ alignItems: 'center' }}>
+          <Grid item xs={2} sx={{ alignItems: 'top', marginTop: 1 }}>
             {!!payload ? (
               <Button onClick={onClear} variant="contained" color="primary" data-testid="clear-button">
                 Clear
               </Button>
             ) : (
-              <Button onClick={onSubmit} variant="contained" color="primary" data-testid="shorten-button">
+              <Button disabled={!canShorten} onClick={onSubmit} variant="contained" color="primary" data-testid="shorten-button">
                 Shorten
               </Button>
             )
