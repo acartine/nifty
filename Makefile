@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-.PHONY: build build-py build-ui build-docker prepare run run-app-local run-dev run-datastore run-ui-dev stop stop-datastore test test-integration wipe-db
+.PHONY: build build-py build-ui build-docker prepare run run-app-local run-dev run-datastore run-ui-dev stop stop-datastore test test-integration test-ui-dev wipe-db
 	
 build-py:
 	pipenv install
@@ -50,6 +50,8 @@ test-integration:
 	PYTHONPATH=. pipenv run pytest tests/integration/all.py
 	make stop-datastore
 
+test-ui-dev:
+	pushd ui && yarn run cypress open --env host='localhost:3000'
 
 wipe-db:
 	docker volume rm -f nifty_postgres-data
