@@ -78,6 +78,7 @@ const ShortenForm: React.FC<ShortenFormProps> = () => {
           <Grid item xs={10}>
             <TextField
               data-testid="long-url-textfield"
+              id="long-url-textfield"
               autoFocus={!payload}
               disabled={!!payload}
               error={isError}

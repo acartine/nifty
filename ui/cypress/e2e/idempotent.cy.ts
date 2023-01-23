@@ -12,6 +12,8 @@ describe('idempotent', () => {
       cy.get('[data-testid="long-url-textfield"]').type('https://www.ea.com/games/fifa/fifa-23')
       cy.get('[data-testid="shorten-button"]').click()
       cy.get('[data-testid="clear-button"]').click()
+      cy.get('[data-testid="shorten-button"]').should('be.disabled')
+      cy.get('[id="long-url-textfield-helper-text"').should('not.exist')
       cy.get('[data-testid="long-url-textfield"]').type(longUrl)
       cy.get('[data-testid="shorten-button"]').click()
       cy.get('[data-testid="short-url-link"]').then((shortUrlLink2) => {
