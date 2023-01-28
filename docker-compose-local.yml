@@ -17,15 +17,6 @@ services:
 
   redis:
     image: redis:7.0.7
-    environment:
-      - REDIS_PERSISTENCE=1
-      - REDIS_PERSISTENCE_DB=1
-      - REDIS_PERSISTENCE_DB_BACKEND=postgresql
-      - REDIS_PERSISTENCE_DB_USER=postgres
-      - REDIS_PERSISTENCE_DB_PASSWORD=mypassword
-      - REDIS_PERSISTENCE_DB_HOST=postgres
-      - REDIS_PERSISTENCE_DB_PORT=5432
-      - REDIS_PERSISTENCE_DB_NAME=redis
     ports:
       - "6379:6379"
     links:

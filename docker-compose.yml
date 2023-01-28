@@ -5,6 +5,10 @@ services:
     image: postgres:15.1
     healthcheck:
       test: [ "CMD", "pg_isready", "-q" ]
+      interval: 1s
+      timeout: 20s
+      retries: 20
+      start_period: 1s
     environment:
       - POSTGRES_PASSWORD=mypassword
     volumes:
@@ -32,8 +36,8 @@ services:
       - FLASK_RW_PWD=local
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     depends_on:
-     - postgres
-
+      postgres:
+        condition: service_healthy
 
   nginx:
     image: nginx:1.23.3

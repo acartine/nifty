@@ -54,10 +54,12 @@ run-ui-dev:
 stop:
 	docker compose down
 
-test: stop db-wipe run
-	PG_HOST=localhost PG_ADMIN_PWD=mypassword make db-apply-local
-	pushd ui && yarn cypress run ${ARGS} && popd
-	make stop
+test: stop db-wipe run db-apply-local
+	pushd ui && yarn cypress run ${ARGS}; \
+	e=$$?; \
+	popd; \
+	make stop; \
+	exit $$e
 
 test-integration: datastore-stop db-wipe datastore-run db-apply-local db-reapply-all-local
 	PYTHONPATH=. pipenv run pytest tests/integration/all.py; \
