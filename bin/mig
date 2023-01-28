@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# PG_HOST, PG_PWD and FLASK_RW_PWD must be set for this to work
+# Ultimately we will move creds to secrets manager, but then we'll
+# need env variables for the creds manager anyway
+pipenv run yoyo "$@"
+
