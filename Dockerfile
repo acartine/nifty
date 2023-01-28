@@ -4,7 +4,7 @@ FROM python:3.10
 RUN pip install pipenv
 
 # Copy the application code and Pipfile.lock file
-COPY app.py /app/app.py
+COPY *.py /app/
 COPY static /app/static
 COPY Pipfile.lock /app/Pipfile.lock
 COPY Pipfile /app/Pipfile

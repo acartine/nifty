@@ -3,6 +3,8 @@ version: '3'
 services:
   postgres:
     image: postgres:15.1
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q" ]
     environment:
       - POSTGRES_PASSWORD=mypassword
     volumes:
@@ -12,15 +14,6 @@ services:
 
   redis:
     image: redis:7.0.7
-    environment:
-      - REDIS_PERSISTENCE=1
-      - REDIS_PERSISTENCE_DB=1
-      - REDIS_PERSISTENCE_DB_BACKEND=postgresql
-      - REDIS_PERSISTENCE_DB_USER=postgres
-      - REDIS_PERSISTENCE_DB_PASSWORD=mypassword
-      - REDIS_PERSISTENCE_DB_HOST=postgres
-      - REDIS_PERSISTENCE_DB_PORT=5432
-      - REDIS_PERSISTENCE_DB_NAME=redis
     ports:
       - "6379:6379"
     links:
@@ -34,11 +27,13 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - PG_HOST=postgres
+      - PG_USER=flask_rw
+      - FLASK_RW_PWD=local
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     depends_on:
-      - redis
+     - postgres
+
 
   nginx:
     image: nginx:1.23.3
