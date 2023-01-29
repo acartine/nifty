@@ -4,8 +4,7 @@ FROM python:3.10
 RUN pip install pipenv
 
 # Copy the application code and Pipfile.lock file
-COPY *.py /app/
-COPY static /app/static
+COPY /src/ /app/
 COPY Pipfile.lock /app/Pipfile.lock
 COPY Pipfile /app/Pipfile
 
@@ -16,4 +15,4 @@ WORKDIR /app
 RUN pipenv install --system --deploy
 
 # Run the app using Gunicorn
-CMD ["/usr/local/bin/gunicorn", "-b", "0.0.0.0:8080", "app:app"]
+CMD ["/usr/local/bin/gunicorn", "-b", "0.0.0.0:5000", "app:app"]

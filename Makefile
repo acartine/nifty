@@ -1,26 +1,17 @@
 SHELL=/bin/bash
 
-.PHONY: build build-py build-ui build-docker datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe  prepare run run-app-local run-dev run-ui-dev stop test test-integration test-ui-dev
+.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev stack-run stack-stop test test-integration test-ui-dev
 	
-build-py:
-	pipenv install
-
 build-ui:
 	pushd ui && yarn install && rm -rf build && yarn build && popd 
 
-prepare: 
-	rm -rf static && cp -r ui/build static
-
-build-docker: 
-	docker compose build
-
-build: build-py build-ui prepare build-docker
+build: py-build build-ui prepare docker-build
 
 datastore-run:
-	docker compose -f docker-compose-local.yml up -d
+	docker compose up --wait -d
 
 datastore-stop:
-	docker compose -f docker-compose-local.yml down
+	docker compose down -v
 
 db-apply:
 	pipenv run yoyo apply
@@ -40,29 +31,47 @@ db-rollback-all-local:
 db-wipe:
 	docker volume rm -f nifty_postgres-data
 
-run:
-	docker compose up -d
+docker-build: py-clean
+	docker build -t acartine/nifty:v1 .
+
+docker-run: docker-build
+	docker run --env-file local.env -p 127.0.0.1:5000:5000 --name nifty -d acartine/nifty:v1
+
+docker-stop:
+	docker container stop nifty && docker container rm nifty
+
+prepare: py-clean 
+	rm -rf src/static && cp -r ui/build src/static
+
+py-build:
+	pipenv install
+
+py-clean:
+	pipenv run pyclean .
 
 run-app-local:
-	pipenv run flask --debug run
+	PYTHONPATH=src pipenv run flask --debug run
 
 run-dev: datastore-run run-app-local
 
 run-ui-dev:
 	pushd ui && yarn start
 
-stop:
-	docker compose down
+stack-run:
+	docker compose --profile all up --wait -d
 
-test: stop db-wipe run db-apply-local
+stack-stop:
+	docker compose --profile all down
+
+test: stack-stop db-wipe stack-run db-apply-local
 	pushd ui && yarn cypress run ${ARGS}; \
 	e=$$?; \
 	popd; \
-	make stop; \
+	make stack-stop; \
 	exit $$e
 
 test-integration: datastore-stop db-wipe datastore-run db-apply-local db-reapply-all-local
-	PYTHONPATH=. pipenv run pytest tests/integration/all.py; \
+	PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
         e=$$?; \
 	make datastore-stop; \
         exit $$e
