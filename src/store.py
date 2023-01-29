@@ -1,7 +1,8 @@
 import logging
-import os
 from dataclasses import dataclass
 from typing import Tuple, TypeVar
+
+from config import cfg
 
 import psycopg
 from psycopg.rows import class_row, BaseRowFactory
@@ -30,9 +31,9 @@ class Url:
 def __execute(sql: str,
               args: Tuple,
               row_factory: BaseRowFactory[T]) -> T:
-    host = os.environ['PG_HOST']
-    user = os.environ['PG_USER']
-    secret = os.environ[f"{user.upper()}_PWD"]
+    host = cfg['postgres']['host']
+    user = cfg['postgres']['user']
+    secret = cfg['postgres']['pwd']
     conninfo = f"postgresql://{user}:****@{host}/postgres"
     logger.debug(f"DB = {conninfo}")
     logger.debug(args)
@@ -41,19 +42,6 @@ def __execute(sql: str,
         with conn.cursor() as cur:
             cur.execute(sql, args)
             return cur.fetchone()
-
-
-# def __get_row_from_cur(cur: Cursor) -> Row | None:
-#     return cur.fetchone()
-#
-#
-# def __get_val_from_cur(cur: Cursor) -> Any:
-#     row = __get_row_from_cur(cur)
-#     return row[0] if row else None
-#
-#
-# def __get_val(sql: str, args: Tuple) -> Any | None:
-#     return __execute(sql, args, __get_val_from_cur)
 
 
 def get_short_url(long_url: str) -> str | None:

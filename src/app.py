@@ -1,10 +1,10 @@
-import os
 from flask import Flask, send_from_directory, redirect, jsonify
 import random
 import string
 import logging
 import sys
 
+from config import cfg
 from base62 import base62_encode
 from store import get_short_url, upsert_long_url, upsert_link, get_long_url
 
@@ -12,8 +12,8 @@ from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
 
 # TODO set up blueprints
-# TODO move this to config
-log_level = os.environ.get('LOG_LEVEL', 'WARN')
+
+log_level = cfg['logging'].get('level', 'WARN')
 log_level_val = getattr(logging, log_level.upper())
 print(f"Log level set to {log_level} {log_level_val}")
 root = logging.getLogger()
