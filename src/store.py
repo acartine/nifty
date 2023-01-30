@@ -3,16 +3,22 @@ import atexit
 from dataclasses import dataclass
 from typing import Tuple, TypeVar
 
+from redis_lru import RedisLRU
+
 from config import cfg
 
 from psycopg.rows import class_row, BaseRowFactory
 from psycopg_pool import ConnectionPool
+from redis import Redis
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')
 _conninfo = f"postgresql://{cfg['postgres']['user']}:{cfg['postgres']['pwd']}" \
             f"@{cfg['postgres']['host']}/postgres"
 _pool = ConnectionPool(conninfo=_conninfo)
+
+_redis = Redis(host=cfg['redis']['host'])
+_long_url_cache = RedisLRU(_redis)
 
 
 @atexit.register
@@ -22,8 +28,11 @@ def close():
 
 @dataclass
 class LinkUpsertResult:
-    id: int | None = None
-    short_url_id: int | None = None
+    id: int
+    long_url_id: int
+    short_url_id: int
+    long_url: str
+    short_url: str
 
 
 @dataclass
@@ -34,6 +43,12 @@ class Id:
 @dataclass
 class Url:
     url: str | None = None
+
+
+@dataclass
+class UrlRow:
+    id: int
+    url: str
 
 
 def _execute(sql: str,
@@ -56,8 +71,6 @@ WHERE l.url = %s;
 
 
 def get_short_url(long_url: str) -> str | None:
-    # TODO add redis cache
-
     ret = _execute(_short_url_sql, (long_url,), class_row(Url))
     return ret.url if ret else None
 
@@ -95,21 +108,29 @@ WITH upsert_short AS (
 ON
     CONFLICT (url) DO NOTHING 
 RETURNING id 
-)
+), upsert_link AS (
 INSERT INTO link(long_url_id, short_url_id)
 VALUES (%s, COALESCE((SELECT id FROM upsert_short),(SELECT id FROM short_url WHERE url = %s)))
 ON CONFLICT (short_url_id)
 DO NOTHING
-RETURNING id, short_url_id;
+RETURNING id, %s AS long_url_id, short_url_id, %s AS short_url
+)
+SELECT ul.id, %s AS long_url_id, ul.short_url_id, l.url AS long_url, ul.short_url
+FROM upsert_link ul
+JOIN long_url l
+ON l.id = %s AND l.id = ul.long_url_id;
     """
 
 
 def upsert_link(long_url_id: int, short_url: str) -> LinkUpsertResult:
-    ret = _execute(_link_sql, (short_url, long_url_id, short_url),
-                   class_row(LinkUpsertResult))
+    params = (short_url, long_url_id, short_url, long_url_id, short_url,
+              long_url_id, long_url_id)
+    ret = _execute(_link_sql, params, class_row(LinkUpsertResult))
     if not ret:
         raise Exception("Unable to get or create long url from ${long_url}")
 
+    # update the cache, otherwise it's memoized to None
+    _long_url_cache.set(ret.short_url, ret.long_url)
     return ret
 
 
@@ -123,6 +144,7 @@ ON l.id = k.long_url_id;
     """
 
 
+@_long_url_cache
 def get_long_url(short_url: str) -> str | None:
     ret = _execute(_long_url_sql, (short_url,), class_row(Url))
     return ret.url if ret else None

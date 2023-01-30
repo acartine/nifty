@@ -11,7 +11,7 @@ datastore-run:
 	docker compose up --wait -d
 
 datastore-stop:
-	docker compose down -v
+	docker compose down
 
 db-apply:
 	pipenv run yoyo apply
