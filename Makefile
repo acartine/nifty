@@ -11,7 +11,7 @@ datastore-run:
 	docker compose up --wait -d
 
 datastore-stop:
-	docker compose down -v
+	docker compose down
 
 db-apply:
 	pipenv run yoyo apply
@@ -32,7 +32,7 @@ db-wipe:
 	docker volume rm -f nifty_postgres-data
 
 docker-build: py-clean
-	docker build -t acartine/nifty:v1 .
+	docker build -t acartine/nifty:v1 ${ARGS} .
 
 docker-run: docker-build
 	docker run --env-file local.env -p 127.0.0.1:5000:5000 --name nifty -d acartine/nifty:v1
@@ -57,7 +57,7 @@ run-dev: datastore-run run-app-local
 run-ui-dev:
 	pushd ui && yarn start
 
-stack-run:
+stack-run: docker-build
 	docker compose --profile all up --wait -d
 
 stack-stop:

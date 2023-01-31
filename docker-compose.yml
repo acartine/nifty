@@ -23,8 +23,16 @@ services:
   redis:
     container_name: redis
     image: redis:7.0.7
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli --user healthcheck --pass hclocal ping | grep PONG" ]
+      interval: 1s
+      timeout: 30s
+      retries: 30
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
       - nw
 
@@ -38,10 +46,15 @@ services:
     environment:
       - PG_HOST=postgres
       - PG_USER=flask_rw
-      - FLASK_RW_PWD=local
+      - PG_PWD=local
+      - REDIS_HOST=redis
+      - REDIS_USER=flask_rw
+      - REDIS_PWD=local
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - nw
