@@ -20,7 +20,7 @@ BEGIN
 ) THEN
       RAISE NOTICE 'Role "flask_rw" already exists. Skipping.';
 ELSE
-      CREATE ROLE flask_rw LOGIN PASSWORD '$FLASK_RW_PWD$';
+      CREATE ROLE flask_rw LOGIN PASSWORD '$PG_PWD$';
 END IF;
 END
 $do$;
@@ -29,15 +29,15 @@ $do$;
 
 def get_pwd():
     # TODO this should probably be pulled from secrets manager
-    pwd = os.environ.get('FLASK_RW_PWD')
+    pwd = os.environ.get('PG_PWD')
     if not pwd:
-        raise Exception('FLASK_RW_PWD must be set')
+        raise Exception('PG_PWD must be set')
     return pwd
 
 
 def apply_step(conn):
     cursor = conn.cursor()
-    cursor.execute(apply_sql.replace('$FLASK_RW_PWD$', get_pwd()))
+    cursor.execute(apply_sql.replace('$PG_PWD$', get_pwd()))
 
 
 rollback_sql = """

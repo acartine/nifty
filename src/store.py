@@ -3,6 +3,7 @@ import atexit
 from dataclasses import dataclass
 from typing import Tuple, TypeVar
 
+import redis
 from redis_lru import RedisLRU
 
 from config import cfg
@@ -17,7 +18,8 @@ _conninfo = f"postgresql://{cfg['postgres']['user']}:{cfg['postgres']['pwd']}" \
             f"@{cfg['postgres']['host']}/postgres"
 _pool = ConnectionPool(conninfo=_conninfo)
 
-_redis = Redis(host=cfg['redis']['host'])
+_redis = Redis(host=cfg['redis']['host'], username=cfg['redis']['user'],
+               password=cfg['redis']['pwd'])
 _long_url_cache = RedisLRU(_redis)
 
 
@@ -130,7 +132,12 @@ def upsert_link(long_url_id: int, short_url: str) -> LinkUpsertResult:
         raise Exception("Unable to get or create long url from ${long_url}")
 
     # update the cache, otherwise it's memoized to None
-    _long_url_cache.set(ret.short_url, ret.long_url)
+    try:
+        _long_url_cache.set(ret.short_url, ret.long_url)
+    except redis.exceptions.AuthenticationError as e:
+        _logger.error(f"bad user '{cfg['redis']['user']}' / '{cfg['redis']['pwd']}'")
+        raise e
+
     return ret
 
 
