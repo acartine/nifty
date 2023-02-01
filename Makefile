@@ -35,7 +35,7 @@ docker-build: py-clean
 	docker build -t acartine/nifty:v1 ${ARGS} .
 
 docker-run: docker-build
-	docker run --env-file local.env -p 127.0.0.1:5000:5000 --name nifty -d acartine/nifty:v1
+	docker run --env-file .env -p 127.0.0.1:5000:5000 --name nifty -d acartine/nifty:v1
 
 docker-stop:
 	docker container stop nifty && docker container rm nifty
