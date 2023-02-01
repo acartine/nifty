@@ -44,13 +44,13 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - PG_HOST=postgres
-      - PG_USER=flask_rw
-      - PG_PWD=local
-      - REDIS_HOST=redis
-      - REDIS_USER=flask_rw
-      - REDIS_PWD=local
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - PG_HOST=postgres
+      - PG_PWD=${PG_PWD}
+      - PG_USER=${PG_USER}
+      - REDIS_HOST=redis
+      - REDIS_PWD=${REDIS_PWD}
+      - REDIS_USER=${REDIS_USER}
     depends_on:
       postgres:
         condition: service_healthy
