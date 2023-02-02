@@ -16,6 +16,8 @@ redis-lru = "~=0.1.2"
 pytest = "~=7.2.1"
 yoyo-migrations = "~=8.1.0"
 pyclean = "~=2.6.0"
+scrapy = "~=2.7.1"
+requests = "~=2.28.2"
 
 [requires]
 python_version = "~=3.10.6"
