@@ -97,7 +97,7 @@ CONCURRENT_REQUESTS = 16
 DEPTH_LIMIT = 2
 DEPTH_PRIORITY = -3
 FEEDS = {
-    pathlib.Path('items.csv'): {
+    pathlib.Path('../../data/links.csv'): {
         'format': 'csv',
         'fields': ['url', 'title'],
     },

@@ -21,3 +21,6 @@ requests = "~=2.28.2"
 
 [requires]
 python_version = "~=3.10.6"
+
+[scripts]
+load-links = "python utils/client/client.py data/seeds.csv"
