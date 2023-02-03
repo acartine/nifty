@@ -1,3 +1,6 @@
+import json
+import time
+
 from flask import Flask, send_from_directory, redirect, jsonify
 import random
 import string
@@ -6,7 +9,7 @@ import sys
 
 from config import cfg
 from base62 import base62_encode
-from store import get_short_url, upsert_long_url, upsert_link, get_long_url
+from store import get_short_url, upsert_long_url, upsert_link, get_long_url, redis_client
 
 from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
@@ -89,6 +92,10 @@ def lookup(short_url):
 
     # Redirect to the long URL if it exists
     if long_url:
+        redis_client.publish('actions',
+                             json.dumps({'type': 'get',
+                                         'at': int(time.time()),
+                                         'url': short_url}))
         return redirect(long_url)
     else:
         return 'Short URL not found', 404
