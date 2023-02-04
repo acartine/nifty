@@ -1,24 +1,21 @@
-import logging
 import atexit
+import logging
 from dataclasses import dataclass
 from typing import Tuple, TypeVar
 
-from redis_lru import RedisLRU
-
-from config import cfg
-
 from psycopg.rows import class_row, BaseRowFactory
 from psycopg_pool import ConnectionPool
-from redis import Redis
+from redis_lru import RedisLRU
+
+from nifty_common.config import cfg
+from nifty_common.helpers import get_redis
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')
 _conninfo = f"postgresql://{cfg['postgres']['user']}:{cfg['postgres']['pwd']}" \
             f"@{cfg['postgres']['host']}/postgres"
 _pool = ConnectionPool(conninfo=_conninfo)
-
-redis_client = Redis(host=cfg['redis']['host'], username=cfg['redis']['user'],
-                     password=cfg['redis']['pwd'])
+redis_client = get_redis()
 _long_url_cache = RedisLRU(redis_client)
 
 

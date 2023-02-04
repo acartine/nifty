@@ -1,18 +1,17 @@
-import json
+import logging
+import random
+import string
+import sys
 import time
 
 from flask import Flask, send_from_directory, redirect, jsonify
-import random
-import string
-import logging
-import sys
-
-from config import cfg
-from base62 import base62_encode
-from store import get_short_url, upsert_long_url, upsert_link, get_long_url, redis_client
-
 from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
+
+from nifty.base62 import base62_encode
+from nifty_common.config import cfg
+from nifty.store import get_short_url, upsert_long_url, upsert_link, get_long_url, redis_client
+from nifty_common.types import Action, Channel, ActionType
 
 # TODO set up blueprints
 
@@ -92,10 +91,10 @@ def lookup(short_url):
 
     # Redirect to the long URL if it exists
     if long_url:
-        redis_client.publish('actions',
-                             json.dumps({'type': 'get',
-                                         'at': int(time.time()),
-                                         'url': short_url}))
+        redis_client.publish(Channel.action,
+                             Action(type=ActionType.get,
+                                    at=int(time.time()),
+                                    url=short_url).json())
         return redirect(long_url)
     else:
         return 'Short URL not found', 404
