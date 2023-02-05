@@ -12,11 +12,11 @@ class Entry:
 class TopList:
     REMOVED = -1
 
-    def __init__(self, expiry_sec: int, bucket_len_sec: Optional[int] = 1):
+    def __init__(self, max_age: int, bucket_len_sec: Optional[int] = 1):
         self.ordered_entries = []
         self.entries = {}
         self.time_buckets = OrderedDict()
-        self.expiry_sec = expiry_sec
+        self.expiry_sec = max_age
         self.bucket_len_sec = bucket_len_sec
 
     def __reap(self, ts: int):
