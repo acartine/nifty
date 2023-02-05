@@ -100,11 +100,7 @@ def lookup(short_url):
         return 'Short URL not found', 404
 
 
-def generate_short_url():
-    # Generate a new short URL
-    # This function can use any method for generating short URLs, such as using a
-    # counter or hash function
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+
 
 
 if __name__ == '__main__':

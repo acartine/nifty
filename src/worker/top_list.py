@@ -1,15 +1,17 @@
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Generic, List, Optional, TypeVar
+
+T = TypeVar('T')
 
 
 @dataclass
-class Entry:
-    key: int
+class Entry(Generic[T]):
+    key: T
     count: int
 
 
-class TopList:
+class TopList(Generic[T]):
     REMOVED = -1
 
     def __init__(self, max_age: int, bucket_len_sec: Optional[int] = 1):
@@ -20,16 +22,19 @@ class TopList:
         self.bucket_len_sec = bucket_len_sec
 
     def __reap(self, ts: int):
-        ts_sec = int(ts/1000)
+        ts_sec = int(ts / 1000)
         while len(self.time_buckets) > 0 and ts_sec - min(self.time_buckets) >= self.expiry_sec:
-            item = self.time_buckets.popitem(0)
+            item = self.time_buckets.popitem(last=False)
             for key, count in item[1].items():
                 self.__decr(key, count)
+
+    def __len__(self) -> int:
+        return len(self.ordered_entries)
 
     def __sort(self):
         self.ordered_entries.sort(key=lambda e: e.count, reverse=True)
 
-    def __decr(self, key: int, count: Optional[int] = 1):
+    def __decr(self, key: T, count: Optional[int] = 1):
         entry = self.entries.get(key)
         entry.count -= count
         self.__sort()
@@ -38,7 +43,7 @@ class TopList:
             self.ordered_entries.pop()
             del self.entries[key]
 
-    def incr(self, key: int, ts: int):
+    def incr(self, key: T, ts: int):
         self.__reap(ts)
         entry = self.entries.get(key)
         if not entry:
@@ -60,7 +65,7 @@ class TopList:
 
         bucket[key] += 1
 
-    def get(self, ts: int, lim: Optional[int] = None) -> List[Entry]:
+    def get(self, ts: int, lim: Optional[int] = None) -> List[Entry[T]]:
         self.__reap(ts)
         size = len(self.ordered_entries)
         local_lim = lim if lim and lim < size else size
