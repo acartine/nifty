@@ -54,7 +54,8 @@ class TopList(Generic[T]):
         self.__sort()
 
         # put it in timebucket
-        bucket_key = int(ts / 1000 - ts % self.bucket_len_sec)
+        ts_secs = int(ts / 1000)
+        bucket_key = ts_secs - ts_secs % self.bucket_len_sec
         bucket = self.time_buckets.get(bucket_key)
         if not bucket:
             bucket = {}
