@@ -76,6 +76,9 @@ test-integration: datastore-stop db-wipe datastore-run db-apply-local db-reapply
 	make datastore-stop; \
         exit $$e
 
+test-unit: py-clean
+	PYTHONPATH=src pipenv run pytest tests/unit
+
 test-ui-dev:
 	pushd ui && yarn run cypress open --env host='localhost:3000'
 
