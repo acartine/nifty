@@ -43,8 +43,8 @@ class TopList(Generic[T]):
             self.ordered_entries.pop()
             del self.entries[key]
 
-    def incr(self, key: T, ts: int):
-        self.__reap(ts)
+    def incr(self, key: T, ts_ms: int):
+        self.__reap(ts_ms)
         entry = self.entries.get(key)
         if not entry:
             entry = Entry(key, 0)
@@ -54,7 +54,7 @@ class TopList(Generic[T]):
         self.__sort()
 
         # put it in timebucket
-        ts_secs = int(ts / 1000)
+        ts_secs = int(ts_ms / 1000)
         bucket_key = ts_secs - ts_secs % self.bucket_len_sec
         bucket = self.time_buckets.get(bucket_key)
         if not bucket:
@@ -66,8 +66,8 @@ class TopList(Generic[T]):
 
         bucket[key] += 1
 
-    def get(self, ts: int, lim: Optional[int] = None) -> List[Entry[T]]:
-        self.__reap(ts)
+    def get(self, ts_ms: int, lim: Optional[int] = None) -> List[Entry[T]]:
+        self.__reap(ts_ms)
         size = len(self.ordered_entries)
         local_lim = lim if lim and lim < size else size
         return [e for e in self.ordered_entries[:local_lim]]

@@ -15,4 +15,4 @@ class ActionType(str, Enum):
 class Action(BaseModel):
     type: ActionType
     at: int
-    url: str
+    link_id: int

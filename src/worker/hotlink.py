@@ -1,11 +1,8 @@
 import logging
 import sys
-import time
 
-from redis.client import Redis
-
-from nifty.constants import REDIS_TOPLIST_KEY
-from nifty_common.helpers import get_redis
+from nifty_common.constants import REDIS_TOPLIST_KEY
+from nifty_common.helpers import get_redis, timestamp_ms
 from nifty_common.types import Action, ActionType, Channel
 from worker.top_list import TopList
 
@@ -27,52 +24,51 @@ root.addHandler(handler)
 
 # we can run multiples of these in parallel for reliability
 # they will overwrite each other but we don't need it to be exact
-def _update_hotlinks(redis: Redis, toplist: TopList, now: int, size: int):
-    mappings = {e.key: e.count for e in toplist.get(now, size)}
-    pipeline = redis.pipeline(transaction=True)
-    pipeline.delete(REDIS_TOPLIST_KEY)
-
-    if len(toplist) > 0:
-        logging.debug(f"uploading {mappings}")
-        pipeline.zadd(REDIS_TOPLIST_KEY, mappings)
-
-    pipeline.execute()
 
 
-def main():
+def run():
     # TODO configurable
     refresh_interval = 5
+    ri_ms = refresh_interval*1000
     size = 10
-    expiry = 15
+    expiry = 10
 
     read = get_redis()
     channels = read.pubsub(ignore_subscribe_messages=True)
     channels.subscribe(Channel.action)
     redis = get_redis()
     toplist = TopList(expiry * 60, refresh_interval * 2)
-    last_push = int(time.time())
+    last_push_ms = timestamp_ms()
     running = True
 
     # TODO, catch ctrl-c
     while running:
-        now = int(time.time())
-        time_elapsed = now - last_push
-        logging.debug(f"now={now} time_elapsed={time_elapsed} refresh_interval={refresh_interval}")
-        if time_elapsed >= refresh_interval:
-            _update_hotlinks(redis, toplist, now, size)
-            last_push = now
-            time_elapsed = 0
-        wait_time = refresh_interval - time_elapsed
-        logging.debug(f"wait_time={wait_time}")
-        msg = channels.get_message(True, wait_time)
-        logging.debug(msg)
+        now_ms = timestamp_ms()
+
+        # see if refresh interval has elapsed
+        time_elapsed_ms = now_ms - last_push_ms
+        if time_elapsed_ms >= ri_ms:
+            mappings = {e.key: e.count for e in toplist.get(now_ms, size)}
+            pipeline = redis.pipeline(transaction=True)
+            pipeline.delete(REDIS_TOPLIST_KEY)
+            if len(toplist) > 0:
+                logging.debug(f"pushing to redis: {mappings}")
+                pipeline.zadd(REDIS_TOPLIST_KEY, mappings)
+            pipeline.execute()
+            last_push_ms = now_ms
+            time_elapsed_ms = 0
+
+        # only block for the time left (roughly :-) )
+        wait_time_sec = (ri_ms - time_elapsed_ms)/1000
+        logging.debug(f"wait_time_sec={wait_time_sec}")
+        msg = channels.get_message(True, wait_time_sec)
         if msg:
             payload = msg['data'].decode('UTF-8')
-            print(payload)
             action: Action = Action.parse_raw(payload)
             if action.type == ActionType.get:
-                toplist.incr(action.url, action.at)
+                logging.debug(action)
+                toplist.incr(action.link_id, action.at)
 
 
 if __name__ == '__main__':
-    main()
+    run()
