@@ -1,15 +1,15 @@
-from flask import Flask, send_from_directory, redirect, jsonify
-import random
-import string
 import logging
 import sys
 
-from config import cfg
-from base62 import base62_encode
-from store import get_short_url, upsert_long_url, upsert_link, get_long_url
-
+from flask import Flask, jsonify, redirect, send_from_directory
 from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
+
+from nifty.base62 import base62_encode
+from nifty.store import Link, get_hotlinks, get_long_url, get_short_url, redis_client, upsert_link, upsert_long_url
+from nifty_common.config import cfg
+from nifty_common.helpers import timestamp_ms
+from nifty_common.types import Action, ActionType, Channel
 
 # TODO set up blueprints
 
@@ -82,23 +82,25 @@ def shorten(body: ShortenRequest):
     return jsonify({'short_url': short_url}), 201
 
 
+@app.route('/nifty/hotlinks', methods={'GET'})
+def hotlinks():
+    return get_hotlinks().json(), 200
+
+
 @app.route('/<short_url>', methods=['GET'])
 def lookup(short_url):
     # Look up the long URL for the given short URL
-    long_url = get_long_url(short_url)
+    link: Link | None = get_long_url(short_url)
 
     # Redirect to the long URL if it exists
-    if long_url:
-        return redirect(long_url)
+    if link:
+        redis_client.publish(Channel.action,
+                             Action(type=ActionType.get,
+                                    at=timestamp_ms(),
+                                    link_id=link.id).json())
+        return redirect(link.long_url)
     else:
         return 'Short URL not found', 404
-
-
-def generate_short_url():
-    # Generate a new short URL
-    # This function can use any method for generating short URLs, such as using a
-    # counter or hash function
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=8))
 
 
 if __name__ == '__main__':

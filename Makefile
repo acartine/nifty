@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev stack-run stack-stop test test-integration test-ui-dev
+.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-worker-local stack-run stack-stop test test-integration test-ui-dev
 	
 build-ui:
 	pushd ui && yarn install && rm -rf build && yarn build && popd 
@@ -57,6 +57,9 @@ run-dev: datastore-run run-app-local
 run-ui-dev:
 	pushd ui && yarn start
 
+run-worker-local:
+	PYTHONPATH=src pipenv run python src/worker/hotlink.py
+
 stack-run: docker-build
 	docker compose --profile all up --wait -d
 
@@ -75,6 +78,9 @@ test-integration: datastore-stop db-wipe datastore-run db-apply-local db-reapply
         e=$$?; \
 	make datastore-stop; \
         exit $$e
+
+test-unit: py-clean
+	PYTHONPATH=src pipenv run pytest tests/unit
 
 test-ui-dev:
 	pushd ui && yarn run cypress open --env host='localhost:3000'
