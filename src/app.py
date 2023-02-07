@@ -97,7 +97,9 @@ def lookup(short_url):
         redis_client.publish(Channel.action,
                              Action(type=ActionType.get,
                                     at=timestamp_ms(),
-                                    link_id=link.id).json())
+                                    link_id=link.id,
+                                    short_url=link.short_url,
+                                    long_url=link.long_url).json())
         return redirect(link.long_url)
     else:
         return 'Short URL not found', 404

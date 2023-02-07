@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class Channel(str, Enum):
     action = 'action'
+    hotlist_update = 'hotlistupdate'
 
 
 class ActionType(str, Enum):
@@ -16,3 +17,5 @@ class Action(BaseModel):
     type: ActionType
     at: int
     link_id: int
+    short_url: str
+    long_url: str

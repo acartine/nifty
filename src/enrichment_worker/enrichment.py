@@ -4,7 +4,7 @@ import sys
 from nifty_common.constants import REDIS_TOPLIST_KEY
 from nifty_common.helpers import get_redis, timestamp_ms
 from nifty_common.types import Action, ActionType, Channel
-from worker.top_list import TopList
+from hotlink_worker.top_list import TopList
 
 log_level_val = getattr(logging, "DEBUG")
 print(f"Log level set to {log_level_val}")
@@ -18,27 +18,14 @@ handler.setFormatter(formatter)
 root.addHandler(handler)
 
 
-# redis doesn't really have great datastructures for this
-# time series would have been best, but it doesn't support
-# dynamic labels or aggregations limits in order
-
-# we can run multiples of these in parallel for reliability
-# they will overwrite each other but we don't need it to be exact
-
-
 def run():
     # TODO configurable
-    refresh_interval = 5
-    ri_ms = refresh_interval*1000
-    size = 10
     expiry = 10
 
     read = get_redis()
     channels = read.pubsub(ignore_subscribe_messages=True)
     channels.subscribe(Channel.action)
     redis = get_redis()
-    toplist = TopList(expiry * 60, refresh_interval * 2)
-    last_push_ms = timestamp_ms()
     running = True
 
     # TODO, catch ctrl-c
