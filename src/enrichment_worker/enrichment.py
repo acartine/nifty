@@ -4,7 +4,7 @@ import sys
 from nifty_common.constants import REDIS_TOPLIST_KEY
 from nifty_common.helpers import get_redis, timestamp_ms
 from nifty_common.types import Action, ActionType, Channel
-from hotlink_worker.top_list import TopList
+from toplist_worker.toplist import TopList
 
 log_level_val = getattr(logging, "DEBUG")
 print(f"Log level set to {log_level_val}")

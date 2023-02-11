@@ -15,6 +15,7 @@ class ActionType(str, Enum):
 
 class Action(BaseModel):
     type: ActionType
+    uuid: str
     at: int
     link_id: int
     short_url: str

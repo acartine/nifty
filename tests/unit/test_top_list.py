@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from hotlink_worker.top_list import TopList, Entry
+from toplist_worker.toplist import TopList, Entry
 
 one_second = 1000
 one_minute = 60 * one_second

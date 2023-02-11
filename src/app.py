@@ -1,5 +1,6 @@
 import logging
 import sys
+from uuid import uuid1
 
 from flask import Flask, jsonify, redirect, send_from_directory
 from flask_pydantic import validate
@@ -95,7 +96,9 @@ def lookup(short_url):
     # Redirect to the long URL if it exists
     if link:
         redis_client.publish(Channel.action,
-                             Action(type=ActionType.get,
+                             Action(
+                                    uuid=str(uuid1()),
+                                    type=ActionType.get,
                                     at=timestamp_ms(),
                                     link_id=link.id,
                                     short_url=link.short_url,

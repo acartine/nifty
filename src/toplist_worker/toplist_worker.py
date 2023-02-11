@@ -3,7 +3,10 @@ import sys
 import time
 from typing import Dict, NamedTuple
 
-from hotlink_worker.top_list import AbstractTopList, RedisTopList
+from redis.client import Redis
+
+from claim import claim
+from toplist import AbstractTopList, RedisTopList
 from nifty_common.helpers import get_redis, timestamp_ms
 from nifty_common.types import Action, ActionType, Channel
 
@@ -32,11 +35,12 @@ class TopLink(NamedTuple):
     long_url: str
 
 
-def handle(msg: Dict[str, any], toplist: AbstractTopList[str]):
+def handle(msg: Dict[str, any], redis: Redis, toplist: AbstractTopList[str]):
     action: Action = Action.parse_raw(msg['data'])
     if action.type == ActionType.get:
         logging.debug(action)
-        toplist.incr(action.short_url, min(action.at, timestamp_ms()))
+        if claim(redis, f"{__name__}:{action.uuid}", 60):
+            toplist.incr(action.short_url, min(action.at, timestamp_ms()))
 
 
 def run():
@@ -49,7 +53,8 @@ def run():
     remaining = refresh_interval
 
     running = True
-    toplist = RedisTopList(1 * 30, get_redis(), ctor=str,
+    redis = get_redis()
+    toplist = RedisTopList(1 * 30, redis, ctor=str,
                            bucket_len_sec=1,
                            root_key='nifty')
 
@@ -58,7 +63,7 @@ def run():
         logging.debug(f"next refresh in {remaining}")
         msg = channels.get_message(True, remaining)
         if msg:
-            handle(msg, toplist)
+            handle(msg, redis, toplist)
         else:
             toplist.reap(timestamp_ms())
 
