@@ -1,10 +1,8 @@
 import logging
 import sys
-from typing import Dict, List, NamedTuple
+from typing import Dict, NamedTuple
 
-from redis.client import Redis
-
-from hotlink_worker.top_list import Entry
+from hotlink_worker.top_list import AbstractTopList, RedisTopList
 from nifty_common.helpers import get_redis, timestamp_ms
 from nifty_common.types import Action, ActionType, Channel
 
@@ -33,48 +31,48 @@ class TopLink(NamedTuple):
     long_url: str
 
 
-class TopLinkWorker:
-    def __init__(self):
-        self.running = False
-        self.redis: Redis | None = None
+def handle(msg: Dict[str, any], toplist: AbstractTopList[str]):
+    payload = msg['data'].decode('UTF-8')
+    action: Action = Action.parse_raw(payload)
+    if action.type == ActionType.get:
+        logging.debug(action)
+        toplist.incr(action.short_url, min(action.at, timestamp_ms()))
 
-    def diff_lists(self, prev: List[Entry], curr: List[Entry]):
-        pass
 
-    def handle(self, msg: Dict[str, any]):
-        payload = msg['data'].decode('UTF-8')
-        action: Action = Action.parse_raw(payload)
-        if action.type == ActionType.get:
-            logging.debug(action)
+def run():
+    # TODO configurable
+    refresh_interval = 3
+    ri_ms = refresh_interval * 1000
 
-    def run(self):
-        # TODO configurable
-        refresh_interval = 5
-        ri_ms = refresh_interval * 1000
-        size = 10
-        expiry = 10
+    read = get_redis()
+    channels = read.pubsub(ignore_subscribe_messages=True)
+    channels.subscribe(Channel.action)
+    before_ms = timestamp_ms()
+    running = True
+    toplist = RedisTopList(15 * 10, get_redis(), ctor=str,
+                           bucket_len_sec=1,
+                           root_key='nifty')
 
-        read = get_redis()
-        channels = read.pubsub(ignore_subscribe_messages=True)
-        channels.subscribe(Channel.action)
-        self.redis = get_redis()
-        last_push_ms = timestamp_ms()
-        running = True
+    # TODO, catch ctrl-c
+    while running:
+        now_ms = timestamp_ms()
 
-        # TODO, catch ctrl-c
-        while running:
-            now_ms = timestamp_ms()
+        # see if refresh interval has elapsed
+        time_elapsed_ms = now_ms - before_ms
 
-            # see if refresh interval has elapsed
-            time_elapsed_ms = now_ms - last_push_ms
+        # swap time references
+        before_ms = now_ms
 
-            # only block for the time left (roughly :-) )
-            wait_time_sec = (ri_ms - time_elapsed_ms) / 1000
-            logging.debug(f"wait_time_sec={wait_time_sec}")
-            msg = channels.get_message(True, wait_time_sec)
-            if msg:
-                self.handle(msg)
+        # only block for the time left (roughly :-) )
+        remaining = ri_ms - time_elapsed_ms
+        wait_time_sec = refresh_interval if remaining <= 0 \
+            else (ri_ms - time_elapsed_ms) / 1000
+        logging.debug(f"wait_time_sec={wait_time_sec}")
+
+        msg = channels.get_message(True, wait_time_sec)
+        if msg:
+            handle(msg, toplist)
 
 
 if __name__ == '__main__':
-    TopLinkWorker().run()
+    run()
