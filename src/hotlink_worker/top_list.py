@@ -102,12 +102,12 @@ class TopList(AbstractTopList[T]):
 class RedisTopList(AbstractTopList[T]):
 
     def __init__(self,
-                 max_age: int,
+                 max_age_sec: int,
                  redis: Redis,
                  ctor: Callable[[Any], T],
                  bucket_len_sec: Optional[int] = 1,
                  root_key: Optional[str] = 'nifty'):
-        super().__init__(max_age, bucket_len_sec)
+        super().__init__(max_age_sec, bucket_len_sec)
         self.redis = redis
         self.ctor = ctor
         self.toplink_prefix = root_key + ':toplink'
@@ -120,12 +120,8 @@ class RedisTopList(AbstractTopList[T]):
         # SortedSet :[timestamp] { key: link_id, score: -hits }
         self.bucket_set = self.toplink_prefix + ':bucket:set'
 
-    @staticmethod
-    def opt_str(opt_bytes: Optional[bytes]) -> Optional[str]:
-        return str(opt_bytes) if opt_bytes is not None else None
-
     @retry(max_tries=3, stack_id=f"{__name__}:reap")
-    def reap(self, ts: int):
+    def reap(self, ts_ms: int):
         with self.redis.pipeline() as pipe:
             pipe.watch(self.buckets_list)
 
@@ -136,16 +132,17 @@ class RedisTopList(AbstractTopList[T]):
             # "after WATCHing, the pipeline is put into immediate execution
             # mode until we tell it to start buffering commands again."
             # ---
-            oldest_sec_str: Optional[str] = \
-                self.opt_str(cast(Optional[bytes],
-                                  pipe.lindex(self.buckets_list, -1)))
+            oldest_sec_str: Optional[bytes] = \
+                cast(Optional[bytes], pipe.lindex(self.buckets_list, -1))
             if not oldest_sec_str:
                 return
 
-            if int(ts / 1000) - int(oldest_sec_str) < self.max_age:
+            oldest_sec = int(oldest_sec_str)
+            _logger.debug(f"ts={ts_ms} oldest_sec={oldest_sec}")
+            if int(ts_ms / 1000) - oldest_sec < self.max_age:
                 return
 
-            oldest_key = f"{self.bucket_set}:{oldest_sec_str}"
+            oldest_key = f"{self.bucket_set}:{oldest_sec}"
 
             pipe.watch(self.toplist_set, oldest_key, self.buckets_list)
             pipe.multi()
@@ -154,7 +151,7 @@ class RedisTopList(AbstractTopList[T]):
                 .rpop(self.buckets_list) \
                 .execute()
 
-    def __bucket_key(self, name: str) -> str:
+    def __bucket_key(self, name: int) -> str:
         return f"{self.bucket_set}:{name}"
 
     @retry(max_tries=3, stack_id=f"{__name__}:incr")
@@ -170,8 +167,8 @@ class RedisTopList(AbstractTopList[T]):
 
         with self.redis.pipeline() as pipe:
             pipe.watch(self.buckets_list)
-            latest = self.opt_str(cast(Optional[bytes],
-                                       pipe.lindex(self.buckets_list, 0)))
+            latest: Optional[bytes] = \
+                cast(Optional[bytes], pipe.lindex(self.buckets_list, 0))
             _logger.debug(f"latest key = {latest}")
             latest_bucket_key = int(latest) if latest else None
 
@@ -188,20 +185,20 @@ class RedisTopList(AbstractTopList[T]):
                 _logger.debug(f"matching bucket {bucket_key}")
                 expected_list_index = int((latest_bucket_key -
                                            bucket_key) / self.bucket_len_sec)
-                key_at_index = cast(Optional[str], pipe.lindex(self.buckets_list,
-                                                               expected_list_index))
+                key_at_index = cast(Optional[bytes], pipe.lindex(self.buckets_list,
+                                                                 expected_list_index))
                 if not key_at_index or int(key_at_index) != bucket_key:
                     _logger.warning(f"can't increment key '{key}', expected "
                                     f"'{bucket_key}' but found {int(key_at_index)}")
                     return
-            # DONE - bucket is tracked
+        # DONE - bucket is tracked
 
-            pipe.watch(self.bucket_set, self.__bucket_key(latest),
-                       self.toplist_set)
-            pipe.multi()
-            pipe.zincrby(self.__bucket_key(latest), -1, key) \
-                .zincrby(self.toplist_set, 1, key) \
-                .execute()
+        pipe.watch(self.bucket_set, self.__bucket_key(bucket_key),
+                   self.toplist_set)
+        pipe.multi()
+        pipe.zincrby(self.__bucket_key(bucket_key), -1, key) \
+            .zincrby(self.toplist_set, 1, key) \
+            .execute()
 
     def get(self, ts_ms: int, lim: Optional[int] = 1) -> List[Entry[T]]:
         self.reap(ts_ms)

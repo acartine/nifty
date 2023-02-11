@@ -1,5 +1,6 @@
 import logging
 import sys
+import time
 from typing import Dict, NamedTuple
 
 from hotlink_worker.top_list import AbstractTopList, RedisTopList
@@ -32,8 +33,7 @@ class TopLink(NamedTuple):
 
 
 def handle(msg: Dict[str, any], toplist: AbstractTopList[str]):
-    payload = msg['data'].decode('UTF-8')
-    action: Action = Action.parse_raw(payload)
+    action: Action = Action.parse_raw(msg['data'])
     if action.type == ActionType.get:
         logging.debug(action)
         toplist.incr(action.short_url, min(action.at, timestamp_ms()))
@@ -42,36 +42,31 @@ def handle(msg: Dict[str, any], toplist: AbstractTopList[str]):
 def run():
     # TODO configurable
     refresh_interval = 3
-    ri_ms = refresh_interval * 1000
-
     read = get_redis()
     channels = read.pubsub(ignore_subscribe_messages=True)
     channels.subscribe(Channel.action)
-    before_ms = timestamp_ms()
+    before = time.time()
+    remaining = refresh_interval
+
     running = True
-    toplist = RedisTopList(15 * 10, get_redis(), ctor=str,
+    toplist = RedisTopList(1 * 30, get_redis(), ctor=str,
                            bucket_len_sec=1,
                            root_key='nifty')
 
     # TODO, catch ctrl-c
     while running:
-        now_ms = timestamp_ms()
-
-        # see if refresh interval has elapsed
-        time_elapsed_ms = now_ms - before_ms
-
-        # swap time references
-        before_ms = now_ms
-
-        # only block for the time left (roughly :-) )
-        remaining = ri_ms - time_elapsed_ms
-        wait_time_sec = refresh_interval if remaining <= 0 \
-            else (ri_ms - time_elapsed_ms) / 1000
-        logging.debug(f"wait_time_sec={wait_time_sec}")
-
-        msg = channels.get_message(True, wait_time_sec)
+        logging.debug(f"next refresh in {remaining}")
+        msg = channels.get_message(True, remaining)
         if msg:
             handle(msg, toplist)
+        else:
+            toplist.reap(timestamp_ms())
+
+        now = time.time()
+        remaining -= now - before
+        before = now
+        if remaining <= 0:
+            remaining = refresh_interval
 
 
 if __name__ == '__main__':
