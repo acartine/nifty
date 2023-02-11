@@ -1,5 +1,6 @@
 import abc
 import logging
+import math
 from abc import abstractmethod
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -122,34 +123,36 @@ class RedisTopList(AbstractTopList[T]):
 
     @retry(max_tries=3, stack_id=f"{__name__}:reap")
     def reap(self, ts_ms: int):
-        with self.redis.pipeline() as pipe:
-            pipe.watch(self.buckets_list)
+        while True:
+            with self.redis.pipeline() as pipe:
+                pipe.watch(self.buckets_list)
 
-            # the typing is wrong so we have to force cast to proper type.
-            # the docs describe the correct behavior:
-            # from the docs at https://redis.readthedocs.io/en/stable/advanced_features.html
-            # ---
-            # "after WATCHing, the pipeline is put into immediate execution
-            # mode until we tell it to start buffering commands again."
-            # ---
-            oldest_sec_str: Optional[bytes] = \
-                cast(Optional[bytes], pipe.lindex(self.buckets_list, -1))
-            if not oldest_sec_str:
-                return
+                # the typing is wrong so we have to force cast to proper type.
+                # the docs describe the correct behavior:
+                # from the docs at https://redis.readthedocs.io/en/stable/advanced_features.html
+                # ---
+                # "after WATCHing, the pipeline is put into immediate execution
+                # mode until we tell it to start buffering commands again."
+                # ---
+                oldest_sec_str: Optional[bytes] = \
+                    cast(Optional[bytes], pipe.lindex(self.buckets_list, -1))
+                if not oldest_sec_str:
+                    return
 
-            oldest_sec = int(oldest_sec_str)
-            _logger.debug(f"ts={ts_ms} oldest_sec={oldest_sec}")
-            if int(ts_ms / 1000) - oldest_sec < self.max_age:
-                return
+                oldest_sec = int(oldest_sec_str)
+                _logger.debug(f"ts={ts_ms} oldest_sec={oldest_sec}")
+                if int(ts_ms / 1000) - oldest_sec < self.max_age:
+                    return
 
-            oldest_key = f"{self.bucket_set}:{oldest_sec}"
+                oldest_key = f"{self.bucket_set}:{oldest_sec}"
 
-            pipe.watch(self.toplist_set, oldest_key, self.buckets_list)
-            pipe.multi()
-            pipe.zunionstore(self.toplist_set, [self.toplist_set, oldest_key]) \
-                .delete(oldest_key) \
-                .rpop(self.buckets_list) \
-                .execute()
+                pipe.watch(self.toplist_set, oldest_key, self.buckets_list)
+                pipe.multi()
+                pipe.zunionstore(self.toplist_set, [self.toplist_set, oldest_key]) \
+                    .zremrangebyscore(self.toplist_set, -math.inf, 1) \
+                    .delete(oldest_key) \
+                    .rpop(self.buckets_list) \
+                    .execute()
 
     def __bucket_key(self, name: int) -> str:
         return f"{self.bucket_set}:{name}"
