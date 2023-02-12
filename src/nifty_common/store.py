@@ -10,9 +10,9 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 from redis_lru import RedisLRU
 
-from nifty_common.config import cfg
-from nifty_common.constants import REDIS_TOPLIST_KEY
-from nifty_common.helpers import get_redis
+from .config import cfg
+from .constants import REDIS_TRENDING_KEY
+from .helpers import get_redis, trending_size
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')
@@ -39,10 +39,10 @@ class Link:
     short_url: str
 
     def created_at_ms(self) -> int:
-        return int(self.created_at.timestamp()*1000)
+        return int(self.created_at.timestamp() * 1000)
 
 
-class HotListItem(BaseModel):
+class TrendingItem(BaseModel):
     id: int
     created_at: int
     long_url: str
@@ -50,8 +50,8 @@ class HotListItem(BaseModel):
     views: int
 
 
-class HotList(BaseModel):
-    list: List[HotListItem]
+class Trending(BaseModel):
+    list: List[TrendingItem]
 
 
 @dataclass
@@ -210,19 +210,22 @@ def get_links_by_id(ids: List[int]) -> List[Link]:
     return _ex_all(sql, tuple(ids), class_row(Link))
 
 
-def get_hotlinks() -> HotList:
-    results: List[Tuple[int, int]] = redis_client.zrange(REDIS_TOPLIST_KEY,
-                                                         0, 10,
-                                                         withscores=True)
+def get_trending() -> Trending:
+    results: List[Tuple[int, int]] = \
+        redis_client.zrange(REDIS_TRENDING_KEY,
+                            0, trending_size(redis_client),
+                            desc=True,
+                            withscores=True)
     _logger.debug(results)
-    items: List[HotListItem] = []
+    items: List[TrendingItem] = []
     if results and len(results) > 0:
         links: List[Link] = get_links_by_id([int(t[0]) for t in results])
         for i in range(len(results)):
-            items.append(HotListItem(id=results[i][0],
-                                     created_at=links[i].created_at_ms(),
-                                     long_url=links[i].long_url,
-                                     short_url=links[i].short_url,
-                                     views=int(results[i][1])
-                                     ))
-    return HotList(list=items)
+            items.append(
+                TrendingItem(id=results[i][0],
+                             created_at=links[i].created_at_ms(),
+                             long_url=links[i].long_url,
+                             short_url=links[i].short_url,
+                             views=int(results[i][1])
+                             ))
+    return Trending(list=items)

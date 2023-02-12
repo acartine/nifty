@@ -1,17 +1,21 @@
 import abc
+import functools
 import logging
 import math
 from abc import abstractmethod
-from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, List, Optional, TypeVar, cast
+from typing import Any, Callable, Generic, List, Optional, ParamSpec, Set, TypeVar, cast
 
 from redis.client import Redis
 
-from nifty_common.helpers import retry
+from nifty_common.constants import REDIS_TRENDING_SIZE_KEY
+from nifty_common.helpers import noneint_throws, retry
 
 T = TypeVar('T')
 R = TypeVar('R')
+Param = ParamSpec("Param")
+RetType = TypeVar("RetType")
+OriginalFunc = Callable[Param, RetType]
 
 _logger = logging.getLogger(__name__)
 
@@ -39,90 +43,37 @@ class AbstractTopList(Generic[T], abc.ABC):
         pass
 
     @abstractmethod
-    def get(self, ts_ms: int, lim: Optional[int] = None) -> List[Entry[T]]:
+    def get(self, ts_ms: int) -> List[Entry[T]]:
         pass
-
-
-class TopList(AbstractTopList[T]):
-
-    def __init__(self, max_age: int, bucket_len_sec: Optional[int] = 1):
-        super().__init__(max_age, bucket_len_sec)
-        self.entries = {}
-        self.ordered_entries = []
-        self.buckets = OrderedDict()
-
-    def reap(self, ts: int):
-        ts_sec = int(ts / 1000)
-        while len(self.buckets) > 0 and ts_sec - min(self.buckets) >= self.max_age:
-            item = self.buckets.popitem(last=False)
-            for key, count in item[1].items():
-                self.__decr(key, count)
-
-    def __sort(self):
-        self.ordered_entries.sort(key=lambda e: e.count, reverse=True)
-
-    def incr(self, key: T, ts_ms: int):
-        self.reap(ts_ms)
-        entry = self.entries.get(key)
-        if not entry:
-            entry = Entry(key, 0)
-            self.entries[key] = entry
-            self.ordered_entries.append(entry)
-        entry.count += 1
-        self.__sort()
-
-        # put it in timebucket
-        ts_secs = int(ts_ms / 1000)
-        bucket_key = ts_secs - ts_secs % self.bucket_len_sec
-        bucket = self.buckets.get(bucket_key)
-        if not bucket:
-            bucket = {}
-            self.buckets[bucket_key] = bucket
-
-        if key not in bucket:
-            bucket[key] = 0
-
-        bucket[key] += 1
-
-    def __decr(self, key: T, count: Optional[int] = 1):
-        entry = self.entries.get(key)
-        entry.count -= count
-        self.__sort()
-        if entry.count <= 0:
-            # we can do this because we know it will have the lowest count
-            self.ordered_entries.pop()
-            del self.entries[key]
-
-    def get(self, ts_ms: int, lim: Optional[int] = None) -> List[Entry[T]]:
-        self.reap(ts_ms)
-        size = len(self.ordered_entries)
-        local_lim = lim if lim and lim < size else size
-        return [e for e in self.ordered_entries[:local_lim]]
 
 
 class RedisTopList(AbstractTopList[T]):
 
     def __init__(self,
+                 root_key: str,
                  max_age_sec: int,
                  redis: Redis,
                  ctor: Callable[[Any], T],
+                 listener: Callable[[Set[T], Set[T]], None],
                  bucket_len_sec: Optional[int] = 1,
-                 root_key: Optional[str] = 'nifty'):
+                 ):
         super().__init__(max_age_sec, bucket_len_sec)
         self.redis = redis
         self.ctor = ctor
-        self.toplink_prefix = root_key + ':toplink'
+        self.listener = listener
+        self.cache = set()
+
         # SortedSet { key: link_id, score: hits }
-        self.toplist_set = self.toplink_prefix + ':set'
+        self.toplist_set = root_key
 
         # List { key: bucket_id, score: timestamp }
-        self.buckets_list = self.toplink_prefix + ':buckets:list'
+        self.buckets_list = root_key + ':buckets:list'
 
         # SortedSet :[timestamp] { key: link_id, score: -hits }
-        self.bucket_set = self.toplink_prefix + ':bucket:set'
+        self.bucket_set = root_key + ':bucket:set'
 
     @retry(max_tries=3, stack_id=f"{__name__}:reap")
-    def reap(self, ts_ms: int):
+    def __reap(self, ts_ms: int):
         while True:
             with self.redis.pipeline() as pipe:
                 pipe.watch(self.buckets_list)
@@ -157,14 +108,45 @@ class RedisTopList(AbstractTopList[T]):
     def __bucket_key(self, name: int) -> str:
         return f"{self.bucket_set}:{name}"
 
+    def __get(self) -> List[Entry[T]]:
+        size = noneint_throws(self.redis.get(REDIS_TRENDING_SIZE_KEY),
+                              REDIS_TRENDING_SIZE_KEY)
+        _logger.debug(size)
+        foo = self.redis.zrange(self.toplist_set,
+                                start=0,
+                                end=size,
+                                desc=True,
+                                withscores=True,
+                                score_cast_func=int)
+        _logger.debug(foo)
+        return [Entry(self.ctor(k), v) for k, v in foo]
+
+    @staticmethod
+    def _observe() -> OriginalFunc:
+        def decorator(func: OriginalFunc) -> OriginalFunc:
+            @functools.wraps(func)
+            def wrapper(self, *args, **kwargs) -> RetType:
+                ret = func(self, *args, **kwargs)
+                newcache = {item.key for item in self.__get()}
+                added = newcache - self.cache
+                removed = self.cache - newcache
+                self.cache = newcache
+                if added or removed:
+                    self.listener(added, removed)
+                return ret
+
+            return wrapper
+
+        return decorator
+
+    @_observe()
+    def reap(self, ts_ms: int):
+        self.__reap(ts_ms)
+
+    @_observe()
     @retry(max_tries=3, stack_id=f"{__name__}:incr")
     def incr(self, key: T, ts_ms: int):
-        self.reap(ts_ms)
-
-        # TODO msut add dedup logic, looking for guid
-        # proposal, use a callback in __init__
-        # provide a default callback
-
+        self.__reap(ts_ms)
         ts_secs = int(ts_ms / 1000)
         bucket_key = ts_secs - ts_secs % self.bucket_len_sec
 
@@ -203,8 +185,6 @@ class RedisTopList(AbstractTopList[T]):
             .zincrby(self.toplist_set, 1, key) \
             .execute()
 
-    def get(self, ts_ms: int, lim: Optional[int] = 1) -> List[Entry[T]]:
-        self.reap(ts_ms)
-        return [Entry(self.ctor(k), v) for k, v in
-                self.redis.zrange(self.toplist_set, 0, lim, True,
-                                  score_cast_func=int)]
+    def get(self, ts_ms: int) -> List[Entry[T]]:
+        self.reap(ts_ms=ts_ms)
+        return self.__get()

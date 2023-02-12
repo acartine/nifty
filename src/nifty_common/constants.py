@@ -1,1 +1,2 @@
-REDIS_TOPLIST_KEY = 'toplist'
+REDIS_TRENDING_KEY = 'nifty:trending'
+REDIS_TRENDING_SIZE_KEY = REDIS_TRENDING_KEY + ':size'

@@ -1,14 +1,16 @@
 import logging
 import sys
 import time
-from typing import Dict, NamedTuple
+from typing import Dict, NamedTuple, Set
 
 from redis.client import Redis
 
-from claim import claim
-from toplist import AbstractTopList, RedisTopList
-from nifty_common.helpers import get_redis, timestamp_ms
+from nifty_common.claim import claim
+from nifty_common.config import cfg
+from nifty_common.constants import REDIS_TRENDING_KEY, REDIS_TRENDING_SIZE_KEY
+from nifty_common.helpers import get_redis, retry, timestamp_ms, trending_size
 from nifty_common.types import Action, ActionType, Channel
+from toplist import AbstractTopList, RedisTopList
 
 log_level_val = getattr(logging, "DEBUG")
 print(f"Log level set to {log_level_val}")
@@ -43,9 +45,23 @@ def handle(msg: Dict[str, any], redis: Redis, toplist: AbstractTopList[str]):
             toplist.incr(action.short_url, min(action.at, timestamp_ms()))
 
 
+@retry(max_tries=3, stack_id=__name__)
+def set_size(redis: Redis):
+    newsize = cfg.getint('trending', 'size')
+    with redis.pipeline() as pipe:
+        pipe.watch(REDIS_TRENDING_SIZE_KEY)
+        cursize = trending_size(pipe, throws=False)
+        if newsize != cursize:
+            pipe.multi()
+            pipe.set(REDIS_TRENDING_SIZE_KEY, newsize).execute()
+
+
+def on_toplist_change(added: Set[str], removed: Set[str]):
+    logging.debug(f"Added: {added}  Removed: {removed}")
+
+
 def run():
-    # TODO configurable
-    refresh_interval = 3
+    refresh_interval = cfg.getint('trending', 'refresh_sec')
     read = get_redis()
     channels = read.pubsub(ignore_subscribe_messages=True)
     channels.subscribe(Channel.action)
@@ -54,9 +70,14 @@ def run():
 
     running = True
     redis = get_redis()
-    toplist = RedisTopList(1 * 30, redis, ctor=str,
-                           bucket_len_sec=1,
-                           root_key='nifty')
+    set_size(redis)
+    toplist = RedisTopList(
+        REDIS_TRENDING_KEY,
+        cfg.getint('trending', 'interval_sec'),
+        redis,
+        listener=on_toplist_change,
+        ctor=str,
+        bucket_len_sec=cfg.getint('trending', 'bucket_len_sec'))
 
     # TODO, catch ctrl-c
     while running:

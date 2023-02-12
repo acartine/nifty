@@ -6,6 +6,7 @@ from typing import Callable, Optional, ParamSpec, TypeVar
 from redis.client import Redis
 
 from nifty_common.config import cfg
+from nifty_common.constants import REDIS_TRENDING_SIZE_KEY
 
 T = TypeVar('T')
 
@@ -27,7 +28,6 @@ OriginalFunc = Callable[Param, RetType]
 def retry(max_tries: int,
           stack_id: Optional[str] = __name__,
           first_delay: Optional[float] = .1) -> OriginalFunc:
-
     def decorator(func: OriginalFunc) -> OriginalFunc:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> RetType:
@@ -45,8 +45,29 @@ def retry(max_tries: int,
                         raise e
 
         return wrapper
+
     return decorator
 
 
 def opt_or(optional: Optional[T], fallback: T) -> T:
     return optional if optional is not None else fallback
+
+
+def optint_or_none(optional: Optional[T]) -> Optional[int]:
+    return int(optional) if optional is not None else None
+
+
+def redis_int(redis: Redis, key: str, throws: Optional[bool] = True) -> int:
+    raw = redis.get(key)
+    return noneint_throws(raw, key) if throws else optint_or_none(raw)
+
+
+def trending_size(redis: Redis, throws: Optional[bool] = True) -> int:
+    return redis_int(redis, REDIS_TRENDING_SIZE_KEY, throws)
+
+
+def noneint_throws(optional: Optional[T], key: str) -> int:
+    ion = optint_or_none(optional)
+    if ion is None:
+        raise Exception(f"Unset value for {key}")
+    return ion

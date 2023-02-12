@@ -7,7 +7,8 @@ from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
 
 from nifty.base62 import base62_encode
-from nifty.store import Link, get_hotlinks, get_long_url, get_short_url, redis_client, upsert_link, upsert_long_url
+from nifty_common.store import Link, get_trending, get_long_url, get_short_url, redis_client, upsert_link, \
+    upsert_long_url
 from nifty_common.config import cfg
 from nifty_common.helpers import timestamp_ms
 from nifty_common.types import Action, ActionType, Channel
@@ -83,9 +84,9 @@ def shorten(body: ShortenRequest):
     return jsonify({'short_url': short_url}), 201
 
 
-@app.route('/nifty/hotlinks', methods={'GET'})
-def hotlinks():
-    return get_hotlinks().json(), 200
+@app.route('/nifty/trending', methods={'GET'})
+def trending():
+    return get_trending().json(), 200
 
 
 @app.route('/<short_url>', methods=['GET'])
@@ -97,12 +98,12 @@ def lookup(short_url):
     if link:
         redis_client.publish(Channel.action,
                              Action(
-                                    uuid=str(uuid1()),
-                                    type=ActionType.get,
-                                    at=timestamp_ms(),
-                                    link_id=link.id,
-                                    short_url=link.short_url,
-                                    long_url=link.long_url).json())
+                                 uuid=str(uuid1()),
+                                 type=ActionType.get,
+                                 at=timestamp_ms(),
+                                 link_id=link.id,
+                                 short_url=link.short_url,
+                                 long_url=link.long_url).json())
         return redirect(link.long_url)
     else:
         return 'Short URL not found', 404
