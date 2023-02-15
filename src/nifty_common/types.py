@@ -1,11 +1,12 @@
 from enum import Enum
+from typing import Set
 
 from pydantic import BaseModel
 
 
 class Channel(str, Enum):
     action = 'action'
-    hotlist_update = 'hotlistupdate'
+    trending = 'trending'
 
 
 class ActionType(str, Enum):
@@ -13,10 +14,18 @@ class ActionType(str, Enum):
     create = 'create'
 
 
-class Action(BaseModel):
-    type: ActionType
+class Meta(BaseModel):
     uuid: str
     at: int
+
+
+class Action(Meta):
+    type: ActionType
     link_id: int
     short_url: str
     long_url: str
+
+
+class TrendEvent(Meta):
+    added: Set[str]
+    removed: Set[str]

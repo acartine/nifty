@@ -4,6 +4,7 @@ import time
 
 from nifty_common.helpers import get_redis
 from nifty_common.store import Trending, TrendingItem, get_trending
+from nifty_common.types import Channel
 
 log_level_val = getattr(logging, "DEBUG")
 print(f"Log level set to {log_level_val}")
@@ -22,17 +23,10 @@ def handle(item: TrendingItem):
 
 
 def run():
-    refresh_interval = 3
-    running = True
+    read = get_redis()
     redis = get_redis()
-
-    # TODO, catch ctrl-c
-    while running:
-        trending: Trending = get_trending()
-        for item in trending.list:
-            handle(item)
-
-        time.sleep(refresh_interval)
+    channels = read.pubsub(ignore_subscribe_messages=True)
+    channels.subscribe(Channel.trending)
 
 
 if __name__ == '__main__':

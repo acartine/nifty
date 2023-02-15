@@ -66,8 +66,11 @@ def trending_size(redis: Redis, throws: Optional[bool] = True) -> int:
     return redis_int(redis, REDIS_TRENDING_SIZE_KEY, throws)
 
 
+def none_throws(optional: Optional[T], msg: str) -> T:
+    if optional is None:
+        raise Exception(msg)
+    return optional
+
+
 def noneint_throws(optional: Optional[T], key: str) -> int:
-    ion = optint_or_none(optional)
-    if ion is None:
-        raise Exception(f"Unset value for {key}")
-    return ion
+    return none_throws(optint_or_none(optional), f"Unset value for {key}")
