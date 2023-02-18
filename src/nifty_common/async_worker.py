@@ -1,51 +1,22 @@
-import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Generic, Optional, TypeVar
+from typing import Dict
 
-from redis.client import Redis
+from redis.asyncio.client import Redis
 
-from nifty_common.claim import claim
-from nifty_common.helpers import get_redis
-from nifty_common.types import Meta
-
-T = TypeVar('T', bound=Meta)
+from nifty_common.helpers import get_redis_async
+from nifty_common.worker import BaseNiftyWorker, T
 
 
-class BaseNiftyWorker(Generic[T], ABC):
-    """
-    Consumes Redis Pubsub events and (optionally) publishes or
-    stores transformations
-    """
-
+class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):
     def __init__(self):
-        self.running = False
-        self.__redis: Optional[Redis] = None
+        super().__init__(self)
 
-    def before_start(self):
-        """
-        Called after Redis is opened and before the listening starts
-        Override this if you need to initialize things
-        :return: None
-        """
+    @abstractmethod
+    async def on_event(self, msg: T):
         ...
 
     @abstractmethod
-    def unpack(self, msg: Dict[str, any]) -> T:
-        ...
-
-    def filter(self, _msg: T) -> bool:
-        return True
-
-
-class NiftyWorker(BaseNiftyWorker[T], ABC):
-    def __init__(self):
-        super().__init__()
-
-    @abstractmethod
-    def on_event(self, msg: T):
-        ...
-
-    def on_yield(self):
+    async def on_yield(self):
         """
         Called when listen interval expires
         Override this when you want to do clean up or scheduled tasks
@@ -55,12 +26,12 @@ class NiftyWorker(BaseNiftyWorker[T], ABC):
 
     def redis(self) -> Redis:
         if not self.__redis:
-            self.__redis = get_redis()
+            self.__redis = get_redis_async()
         return self.__redis
 
-    def __handle(self, msg: Dict[str, any]):
+    async def __handle(self, msg: Dict[str, any]):
         if not msg:
-            self.on_yield()
+            await self.on_yield()
             return
 
         event = self.unpack(msg)

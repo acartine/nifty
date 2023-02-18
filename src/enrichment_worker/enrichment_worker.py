@@ -17,17 +17,3 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 root.addHandler(handler)
 
-
-def handle(item: TrendingItem):
-    pass
-
-
-def run():
-    read = get_redis()
-    redis = get_redis()
-    channels = read.pubsub(ignore_subscribe_messages=True)
-    channels.subscribe(Channel.trending)
-
-
-if __name__ == '__main__':
-    run()
