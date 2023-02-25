@@ -1,7 +1,8 @@
+import asyncio
 import functools
 import logging
 import time
-from typing import Callable, Optional, ParamSpec, TypeVar
+from typing import Awaitable, Callable, Optional, ParamSpec, TypeVar
 
 from redis.client import Redis
 from redis.asyncio.client import Redis as AsyncRedis
@@ -29,12 +30,12 @@ def timestamp_ms() -> int:
 Param = ParamSpec("Param")
 RetType = TypeVar("RetType")
 OriginalFunc = Callable[Param, RetType]
+AsyncOriginalFunc = Callable[Param, Awaitable[RetType]]
 
 
 def retry(max_tries: int,
           stack_id: Optional[str] = __name__,
           first_delay: Optional[float] = .1) -> OriginalFunc:
-
     def decorator(func: OriginalFunc) -> OriginalFunc:
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> RetType:
@@ -56,19 +57,19 @@ def retry(max_tries: int,
     return decorator
 
 
-async def async_retry(max_tries: int,
-          stack_id: Optional[str] = __name__,
-          first_delay: Optional[float] = .1) -> OriginalFunc:
-    def decorator(func: OriginalFunc) -> OriginalFunc:
+def async_retry(max_tries: int,
+                stack_id: Optional[str] = __name__,
+                first_delay: Optional[float] = .1) -> AsyncOriginalFunc:
+    async def decorator(func: AsyncOriginalFunc) -> AsyncOriginalFunc:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> RetType:
+        async def wrapper(*args, **kwargs) -> RetType:
             for attempt in range(max_tries):
                 # linear for now, keep it simple
                 delay = attempt * first_delay
                 if delay > 0:
-                    time.sleep(delay)
+                    await asyncio.sleep(delay)
                 try:
-                    return func(*args, **kwargs)
+                    return await func(*args, **kwargs)
                 except Exception as e:
                     logging.getLogger(stack_id).debug(e)
                     if attempt >= max_tries - 1:

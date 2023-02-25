@@ -92,4 +92,4 @@ class ToplistWorker(NiftyWorker[Action]):
 if __name__ == '__main__':
     ToplistWorker().run(
         src_channel=Channel.action,
-        listen_interval=cfg.getint('trending', 'interval_sec'))
+        listen_interval=cfg.getint('trending', 'listen_interval_sec'))

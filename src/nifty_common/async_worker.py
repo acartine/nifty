@@ -1,8 +1,10 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Optional
 
 from redis.asyncio.client import Redis
 
+from nifty_common.claim import async_claim
 from nifty_common.helpers import get_redis_async
 from nifty_common.worker import BaseNiftyWorker, T
 
@@ -37,17 +39,17 @@ class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):
         event = self.unpack(msg)
         if self.filter(event):
             logging.getLogger(__name__).debug(event)
-            if claim(self.redis(), f"{self.__class__}:{event.uuid}", 60):
-                self.on_event(event)
+            if await async_claim(self.redis(), f"{self.__class__}:{event.uuid}", 60):
+                await self.on_event(event)
 
     def run(self, *, src_channel: str, listen_interval: Optional[int] = 5):
         self.before_start()
-        redis = get_redis()  # docs say to use diff reais for read, not sure this is true
-        pubsub = redis.pubsub(ignore_subscribe_messages=True)
-        pubsub.subscribe(src_channel)
-        self.running = True
-        while self.running:
-            self.__handle(
-                pubsub.get_message(
-                    ignore_subscribe_messages=True,
-                    timeout=listen_interval))
+        redis = get_redis_async()  # docs say to use diff reais for read, not sure this is true
+        async with redis.pubsub(ignore_subscribe_messages=True) as pubsub:
+            await pubsub.subscribe(src_channel)
+            self.running = True
+            while self.running:
+                await self.__handle(
+                    await pubsub.get_message(
+                        ignore_subscribe_messages=True,
+                        timeout=listen_interval))
