@@ -1,0 +1,4 @@
+-i https://pypi.org/simple
+pydantic==1.10.5
+redis==4.4.2
+typing-extensions==4.5.0 ; python_version >= '3.7'

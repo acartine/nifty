@@ -211,6 +211,10 @@ def get_links_by_id(ids: List[int]) -> List[Link]:
 
 
 def get_trending() -> Trending:
+    tr_sz = trending_size(redis_client, throws=False)
+    if tr_sz is None:
+        return Trending(list=[])
+
     results: List[Tuple[int, int]] = \
         redis_client.zrange(REDIS_TRENDING_KEY,
                             0, trending_size(redis_client),

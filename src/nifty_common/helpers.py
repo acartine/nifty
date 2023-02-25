@@ -89,12 +89,12 @@ def optint_or_none(optional: Optional[T]) -> Optional[int]:
     return int(optional) if optional is not None else None
 
 
-def redis_int(redis: Redis, key: str, throws: Optional[bool] = True) -> int:
+def redis_int(redis: Redis, key: str, throws: Optional[bool] = True) -> Optional[int]:
     raw = redis.get(key)
     return noneint_throws(raw, key) if throws else optint_or_none(raw)
 
 
-def trending_size(redis: Redis, throws: Optional[bool] = True) -> int:
+def trending_size(redis: Redis, throws: Optional[bool] = True) -> Optional[int]:
     return redis_int(redis, REDIS_TRENDING_SIZE_KEY, throws)
 
 
