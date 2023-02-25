@@ -6,7 +6,7 @@ from uuid import uuid1
 from nifty_common.async_worker import AsyncNiftyWorker
 from nifty_common.config import cfg
 from nifty_common.helpers import timestamp_ms
-from nifty_common.types import Channel, LinkTrendEvent, TrendEvent
+from nifty_common.types import Channel, LinkTrendEvent, TrendEvent, UpstreamSource
 from nifty_common.worker import init_logger
 
 init_logger()
@@ -17,13 +17,15 @@ class SplitterWorker(AsyncNiftyWorker[TrendEvent]):
     def __init__(self):
         super().__init__()
 
-    async def on_event(self, msg: TrendEvent):
+    async def on_event(self, channel: Channel, msg: TrendEvent):
         r = self.redis()
+        upstream = UpstreamSource(channel=channel, at=msg.at, uuid=msg.uuid)
         for c in [(a, True) for a in msg.added] + [(r, False) for r in msg.removed]:
             evt = LinkTrendEvent(uuid=str(uuid1()),
                                  at=timestamp_ms(),
                                  short_url=c[0],
-                                 added=c[1])
+                                 added=c[1],
+                                 upstream=[upstream])
             await r.publish(Channel.trending_link, evt.json())  # noqa
 
     async def on_yield(self): ...

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Set
+from typing import List, Set
 
 from pydantic import BaseModel
 
@@ -20,6 +20,14 @@ class Meta(BaseModel):
     at: int
 
 
+class UpstreamSource(Meta):
+    channel: Channel
+
+
+class DownstreamEvent(Meta):
+    upstream: List[UpstreamSource]
+
+
 class Action(Meta):
     type: ActionType
     link_id: int
@@ -31,6 +39,7 @@ class TrendEvent(Meta):
     added: Set[str]
     removed: Set[str]
 
-class LinkTrendEvent(Meta):
+
+class LinkTrendEvent(DownstreamEvent):
     short_url: str
     added: bool

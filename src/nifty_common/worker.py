@@ -7,7 +7,7 @@ from redis.client import Redis
 
 from nifty_common.claim import claim
 from nifty_common.helpers import get_redis
-from nifty_common.types import Meta
+from nifty_common.types import Channel, Meta
 
 T = TypeVar('T', bound=Meta)
 
@@ -56,7 +56,7 @@ class NiftyWorker(BaseNiftyWorker[T], ABC):
         self.__redis: Optional[Redis] = None
 
     @abstractmethod
-    def on_event(self, msg: T):
+    def on_event(self, channel: Channel, msg: T):
         ...
 
     def on_yield(self):
@@ -72,7 +72,7 @@ class NiftyWorker(BaseNiftyWorker[T], ABC):
             self.__redis = get_redis()
         return self.__redis
 
-    def __handle(self, msg: Dict[str, any]):
+    def __handle(self, channel: Channel, msg: Dict[str, any]):
         if not msg:
             self.on_yield()
             return
@@ -81,9 +81,9 @@ class NiftyWorker(BaseNiftyWorker[T], ABC):
         if self.filter(event):
             logging.getLogger(__name__).debug(event)
             if claim(self.redis(), f"{self.__class__}:{event.uuid}", 60):
-                self.on_event(event)
+                self.on_event(channel, event)
 
-    def run(self, *, src_channel: str, listen_interval: Optional[int] = 5):
+    def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
         self.before_start()
         redis = get_redis()  # docs say to use diff reais for read, not sure this is true
         pubsub = redis.pubsub(ignore_subscribe_messages=True)
@@ -91,6 +91,7 @@ class NiftyWorker(BaseNiftyWorker[T], ABC):
         self.running = True
         while self.running:
             self.__handle(
+                src_channel,
                 pubsub.get_message(
                     ignore_subscribe_messages=True,
                     timeout=listen_interval))

@@ -1,5 +1,4 @@
 import logging
-import sys
 from typing import Dict, NamedTuple, Optional, Set
 from uuid import uuid1
 
@@ -73,7 +72,7 @@ class ToplistWorker(NiftyWorker[Action]):
     def filter(self, msg: Action) -> bool:
         return msg.type == ActionType.get
 
-    def on_event(self, msg: Action):
+    def on_event(self, channel: Channel, msg: Action):
         self.toplist().incr(msg.short_url, min(msg.at, timestamp_ms()))
 
     def on_yield(self):
