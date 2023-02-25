@@ -57,6 +57,9 @@ run-dev: datastore-run run-app-local
 run-ui-dev:
 	pushd ui && yarn start
 
+run-splitter-worker-local:
+	PYTHONPATH=src pipenv run python src/splitter_worker/splitter_worker.py
+
 run-toplist-worker-local:
 	PYTHONPATH=src pipenv run python src/toplist_worker/toplist_worker.py
 

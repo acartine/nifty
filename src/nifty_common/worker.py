@@ -1,4 +1,5 @@
 import logging
+import sys
 from abc import ABC, abstractmethod
 from typing import Dict, Generic, Optional, TypeVar
 
@@ -11,6 +12,19 @@ from nifty_common.types import Meta
 T = TypeVar('T', bound=Meta)
 
 
+def init_logger():
+    log_level_val = getattr(logging, "DEBUG")
+    print(f"Log level set to {log_level_val}")
+    root = logging.getLogger()
+    root.setLevel(log_level_val)
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(log_level_val)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    root.addHandler(handler)
+
+
 class BaseNiftyWorker(Generic[T], ABC):
     """
     Consumes Redis Pubsub events and (optionally) publishes or
@@ -19,7 +33,6 @@ class BaseNiftyWorker(Generic[T], ABC):
 
     def __init__(self):
         self.running = False
-        self.__redis: Optional[Redis] = None
 
     def before_start(self):
         """
@@ -40,6 +53,7 @@ class BaseNiftyWorker(Generic[T], ABC):
 class NiftyWorker(BaseNiftyWorker[T], ABC):
     def __init__(self):
         super().__init__()
+        self.__redis: Optional[Redis] = None
 
     @abstractmethod
     def on_event(self, msg: T):

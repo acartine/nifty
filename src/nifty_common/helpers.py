@@ -59,10 +59,10 @@ def retry(max_tries: int,
 
 def async_retry(max_tries: int,
                 stack_id: Optional[str] = __name__,
-                first_delay: Optional[float] = .1) -> AsyncOriginalFunc:
-    async def decorator(func: AsyncOriginalFunc) -> AsyncOriginalFunc:
+                first_delay: Optional[float] = .1) -> Callable[[AsyncOriginalFunc], AsyncOriginalFunc]:
+    def decorator(func: AsyncOriginalFunc) -> AsyncOriginalFunc:
         @functools.wraps(func)
-        async def wrapper(*args, **kwargs) -> RetType:
+        async def wrapper(*args, **kwargs):
             for attempt in range(max_tries):
                 # linear for now, keep it simple
                 delay = attempt * first_delay

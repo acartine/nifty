@@ -7,19 +7,10 @@ from nifty_common.config import cfg
 from nifty_common.constants import REDIS_TRENDING_KEY, REDIS_TRENDING_SIZE_KEY
 from nifty_common.helpers import none_throws, timestamp_ms, trending_size
 from nifty_common.types import Action, ActionType, Channel, TrendEvent
-from nifty_common.worker import NiftyWorker
+from nifty_common.worker import NiftyWorker, init_logger
 from toplist import AbstractTopList, RedisTopList
 
-log_level_val = getattr(logging, "DEBUG")
-print(f"Log level set to {log_level_val}")
-root = logging.getLogger()
-root.setLevel(log_level_val)
-
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(log_level_val)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-root.addHandler(handler)
+init_logger()
 
 
 # redis doesn't really have great datastructures for this

@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from typing import Dict
 from uuid import uuid1
 
@@ -5,17 +7,24 @@ from nifty_common.async_worker import AsyncNiftyWorker
 from nifty_common.config import cfg
 from nifty_common.helpers import timestamp_ms
 from nifty_common.types import Channel, LinkTrendEvent, TrendEvent
+from nifty_common.worker import init_logger
+
+init_logger()
 
 
 class SplitterWorker(AsyncNiftyWorker[TrendEvent]):
+
+    def __init__(self):
+        super().__init__()
+
     async def on_event(self, msg: TrendEvent):
         r = self.redis()
-        for a in msg.added:
+        for c in [(a, True) for a in msg.added] + [(r, False) for r in msg.removed]:
             evt = LinkTrendEvent(uuid=str(uuid1()),
                                  at=timestamp_ms(),
-                                 short_url=a,
-                                 added=True)
-            await r.publish(Channel.trending_link, evt.json()) # noqa
+                                 short_url=c[0],
+                                 added=c[1])
+            await r.publish(Channel.trending_link, evt.json())  # noqa
 
     async def on_yield(self): ...
 
@@ -24,6 +33,9 @@ class SplitterWorker(AsyncNiftyWorker[TrendEvent]):
 
 
 if __name__ == '__main__':
-    SplitterWorker().run(
-        src_channel=Channel.trending,
-        listen_interval=cfg.getint('splitter', 'listen_interval_sec'))
+    worker = SplitterWorker()
+    logging.getLogger(__name__).debug('launching asyncio')
+    asyncio.run(
+        worker.run(
+            src_channel=Channel.trending,
+            listen_interval=cfg.getint('splitter', 'listen_interval_sec')))
