@@ -6,8 +6,8 @@ from pydantic import BaseModel
 
 class Channel(str, Enum):
     action = 'action'
-    trending = 'trending'
-    trending_link = 'trending:link'
+    trend = 'trend'
+    trend_link = 'trend:link'
 
 
 class ActionType(str, Enum):
@@ -40,6 +40,6 @@ class TrendEvent(Meta):
     removed: Set[str]
 
 
-class LinkTrendEvent(DownstreamEvent):
+class TrendLinkEvent(DownstreamEvent):
     short_url: str
     added: bool

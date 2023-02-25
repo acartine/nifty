@@ -25,7 +25,7 @@ class TopLink(NamedTuple):
     long_url: str
 
 
-class ToplistWorker(NiftyWorker[Action]):
+class TrendWorker(NiftyWorker[Action]):
 
     def __init__(self):
         super().__init__()
@@ -37,7 +37,7 @@ class ToplistWorker(NiftyWorker[Action]):
             "self._toplist is not set - did you start the worker?")
 
     def __set_size(self):
-        newsize = cfg.getint('trending', 'size')
+        newsize = cfg.getint(Channel.trend, 'size')
         with self.redis().pipeline() as pipe:
             pipe.watch(REDIS_TRENDING_SIZE_KEY)
             cursize = trending_size(pipe, throws=False)
@@ -51,7 +51,7 @@ class ToplistWorker(NiftyWorker[Action]):
         def on_toplist_change(added: Set[str], removed: Set[str]):
             logging.debug(f"Added: {added}  Removed: {removed}")
             self.redis().publish(
-                Channel.trending,
+                Channel.trend,
                 TrendEvent(
                     uuid=str(uuid1()),
                     at=timestamp_ms(),
@@ -60,11 +60,11 @@ class ToplistWorker(NiftyWorker[Action]):
 
         self._toplist = RedisTopList(
             REDIS_TRENDING_KEY,
-            cfg.getint('trending', 'interval_sec'),
+            cfg.getint(Channel.trend, 'toplist_interval_sec'),
             self.redis(),
             listener=on_toplist_change,
             ctor=str,
-            bucket_len_sec=cfg.getint('trending', 'bucket_len_sec'))
+            bucket_len_sec=cfg.getint(Channel.trend, 'bucket_len_sec'))
 
     def unpack(self, msg: Dict[str, any]) -> Action:
         return Action.parse_raw(msg['data'])
@@ -80,6 +80,6 @@ class ToplistWorker(NiftyWorker[Action]):
 
 
 if __name__ == '__main__':
-    ToplistWorker().run(
+    TrendWorker().run(
         src_channel=Channel.action,
-        listen_interval=cfg.getint('trending', 'listen_interval_sec'))
+        listen_interval=cfg.getint(Channel.trend, 'listen_interval_sec'))

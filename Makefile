@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-toplist-worker-local stack-run stack-stop test test-integration test-ui-dev
+.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-trend-worker-local stack-run stack-stop test test-integration test-ui-dev
 	
 build-ui:
 	pushd ui && yarn install && rm -rf build && yarn build && popd 
@@ -57,11 +57,11 @@ run-dev: datastore-run run-app-local
 run-ui-dev:
 	pushd ui && yarn start
 
-run-splitter-worker-local:
-	PYTHONPATH=src pipenv run python src/splitter_worker/splitter_worker.py
+run-trend-link-worker-local:
+	PYTHONPATH=src pipenv run python src/trend_link_worker/trend_link_worker.py
 
-run-toplist-worker-local:
-	PYTHONPATH=src pipenv run python src/toplist_worker/toplist_worker.py
+run-trend-worker-local:
+	PYTHONPATH=src pipenv run python src/trend_worker/trend_worker.py
 
 stack-run: docker-build
 	docker compose --profile all up --wait -d
