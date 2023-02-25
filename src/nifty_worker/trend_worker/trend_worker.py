@@ -6,8 +6,8 @@ from nifty_common.config import cfg
 from nifty_common.constants import REDIS_TRENDING_KEY, REDIS_TRENDING_SIZE_KEY
 from nifty_common.helpers import none_throws, timestamp_ms, trending_size
 from nifty_common.types import Action, ActionType, Channel, TrendEvent
-from nifty_worker_common.worker import NiftyWorker, init_logger
-from toplist import AbstractTopList, RedisTopList
+from nifty_worker.worker import NiftyWorker, init_logger
+from nifty_worker.trend_worker.toplist import AbstractTopList, RedisTopList
 
 init_logger()
 
@@ -77,9 +77,3 @@ class TrendWorker(NiftyWorker[Action]):
 
     def on_yield(self):
         self.toplist().reap(timestamp_ms())
-
-
-if __name__ == '__main__':
-    TrendWorker().run(
-        src_channel=Channel.action,
-        listen_interval=cfg.getint(Channel.trend, 'listen_interval_sec'))

@@ -36,6 +36,38 @@ services:
     networks:
       - nw
 
+  nginx:
+    profiles:
+      - all
+    container_name: nginx
+    image: nginx:1.23.3
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./src/static:/app/static
+    ports:
+      - "8080:80"
+    depends_on:
+      - nifty
+    networks:
+      - nw
+
+
+  worker-trend:
+    profiles:
+      - all
+    container_name: worker-trend
+    image: acartine/nifty-worker-trend:v1
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - REDIS_HOST=redis
+      - REDIS_PWD=${REDIS_PWD}
+      - REDIS_USER=${REDIS_USER}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - nw
+
   nifty:
     profiles:
       - all
@@ -56,21 +88,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    networks:
-      - nw
-
-  nginx:
-    profiles:
-      - all
-    container_name: nginx
-    image: nginx:1.23.3
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./src/static:/app/static
-    ports:
-      - "8080:80"
-    depends_on:
-      - nifty
+      worker-trend:
+        condition: service_started
     networks:
       - nw
 

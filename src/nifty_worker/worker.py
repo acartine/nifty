@@ -5,7 +5,7 @@ from typing import Dict, Generic, Optional, TypeVar
 
 from redis.client import Redis
 
-from nifty_worker_common.claim import claim
+from nifty_worker.claim import claim
 from nifty_common.helpers import get_redis
 from nifty_common.types import Channel, Meta
 
