@@ -4,10 +4,10 @@ from typing import Dict, Optional
 
 from redis.asyncio.client import Redis
 
-from nifty_common.claim import async_claim
+from nifty_worker_common.claim import async_claim
 from nifty_common.helpers import get_redis_async
 from nifty_common.types import Channel
-from nifty_common.worker import BaseNiftyWorker, T
+from nifty_worker_common.worker import BaseNiftyWorker, T
 
 
 class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):

@@ -10,9 +10,9 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 from redis_lru import RedisLRU
 
-from .config import cfg
-from .constants import REDIS_TRENDING_KEY
-from .helpers import get_redis, trending_size
+from nifty_common.config import cfg
+from nifty_common.constants import REDIS_TRENDING_KEY
+from nifty_common.helpers import get_redis, trending_size
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')

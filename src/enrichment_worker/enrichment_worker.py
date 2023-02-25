@@ -1,10 +1,5 @@
 import logging
 import sys
-import time
-
-from nifty_common.helpers import get_redis
-from nifty_common.store import Trending, TrendingItem, get_trending
-from nifty_common.types import Channel
 
 log_level_val = getattr(logging, "DEBUG")
 print(f"Log level set to {log_level_val}")

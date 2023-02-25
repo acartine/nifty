@@ -3,11 +3,11 @@ import logging
 from typing import Dict
 from uuid import uuid1
 
-from nifty_common.async_worker import AsyncNiftyWorker
+from nifty_worker_common.async_worker import AsyncNiftyWorker
 from nifty_common.config import cfg
 from nifty_common.helpers import timestamp_ms
 from nifty_common.types import Channel, TrendLinkEvent, TrendEvent, UpstreamSource
-from nifty_common.worker import init_logger
+from nifty_worker_common.worker import init_logger
 
 init_logger()
 

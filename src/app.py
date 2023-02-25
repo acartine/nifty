@@ -7,7 +7,7 @@ from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
 
 from nifty.base62 import base62_encode
-from nifty_common.store import Link, get_trending, get_long_url, get_short_url, redis_client, upsert_link, \
+from nifty.store import Link, get_trending, get_long_url, get_short_url, redis_client, upsert_link, \
     upsert_long_url
 from nifty_common.config import cfg
 from nifty_common.helpers import timestamp_ms
