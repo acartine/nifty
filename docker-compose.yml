@@ -52,11 +52,11 @@ services:
     networks:
       - nw
 
-  worker-trend:
+  trend:
     profiles:
       - all
-    container_name: worker-trend
-    image: acartine/nifty-worker-trend:v1
+    container_name: trend
+    image: acartine/nifty-trend:v1
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - REDIS_HOST=redis
@@ -68,11 +68,11 @@ services:
     networks:
       - nw
 
-  worker-trend-link:
+  trend-link:
     profiles:
       - all
-    container_name: worker-trend-link
-    image: acartine/nifty-worker-trend-link:v1
+    container_name: trend-link
+    image: acartine/nifty-trend-link:v1
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - REDIS_HOST=redis

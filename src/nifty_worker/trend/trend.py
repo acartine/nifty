@@ -7,7 +7,7 @@ from nifty_common.constants import REDIS_TRENDING_KEY, REDIS_TRENDING_SIZE_KEY
 from nifty_common.helpers import none_throws, timestamp_ms, trending_size
 from nifty_common.types import Action, ActionType, Channel, TrendEvent
 from nifty_worker.common.worker import NiftyWorker
-from nifty_worker.trend_worker.toplist import AbstractTopList, RedisTopList
+from nifty_worker.trend.toplist import AbstractTopList, RedisTopList
 
 
 # redis doesn't really have great datastructures for this

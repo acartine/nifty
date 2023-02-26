@@ -8,11 +8,11 @@ COPY /src/nifty_worker/__init__.py /app/nifty_worker/__init__.py
 COPY /src/nifty_worker/common/ /app/nifty_worker/common
 
 FROM common AS worker-trend
-COPY /src/nifty_worker/trend_worker/ /app/nifty_worker/trend_worker
+COPY /src/nifty_worker/trend/ /app/nifty_worker/trend
 WORKDIR /app
-CMD ["python", "-m", "nifty_worker.trend_worker"]
+CMD ["python", "-m", "nifty_worker.trend"]
 
 FROM common AS worker-trend-link
-COPY /src/nifty_worker/trend_link_worker/ /app/nifty_worker/trend_link_worker
+COPY /src/nifty_worker/trend_link/ /app/nifty_worker/trend_link
 WORKDIR /app
-CMD ["python", "-m", "nifty_worker.trend_link_worker"]
+CMD ["python", "-m", "nifty_worker.trend_link"]

@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-trend-worker-local stack-run stack-stop test test-integration test-ui-dev
+.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-trend-local stack-run stack-stop test test-integration test-ui-dev
 	
 build-ui:
 	pushd ui && yarn install && rm -rf build && yarn build && popd 
@@ -34,11 +34,11 @@ db-wipe:
 docker-build: py-clean
 	docker build -t acartine/nifty:v1 ${ARGS} .
 
-trend-worker-docker-build: py-clean
-	docker build . -f docker/worker.dockerfile --target worker-trend -t acartine/nifty-worker-trend:v1
+trend-docker-build: py-clean
+	docker build . -f docker/worker.dockerfile --target worker-trend -t acartine/nifty-trend:v1
 
-trend-worker-link-docker-build: py-clean
-	docker build . -f docker/worker.dockerfile --target worker-trend-link -t acartine/nifty-worker-trend-link:v1
+trend-link-docker-build: py-clean
+	docker build . -f docker/worker.dockerfile --target worker-trend-link -t acartine/nifty-trend-link:v1
 
 docker-run: docker-build
 	docker run --env-file .env -p 127.0.0.1:5000:5000 --name nifty -d acartine/nifty:v1
@@ -63,13 +63,13 @@ run-dev: datastore-run run-app-local
 run-ui-dev:
 	pushd ui && yarn start
 
-run-trend-link-worker-local:
-	PYTHONPATH=src pipenv run python -m nifty_worker.trend_link_worker
+run-trend-link-local:
+	PYTHONPATH=src pipenv run python -m nifty_worker.trend_link
 
-run-trend-worker-local:
-	PYTHONPATH=src pipenv run python -m nifty_worker.trend_worker
+run-trend-local:
+	PYTHONPATH=src pipenv run python -m nifty_worker.trend
 
-stack-run: docker-build trend-worker-docker-build trend-worker-link-docker-build
+stack-run: docker-build trend-docker-build trend-link-docker-build
 	docker compose --profile all up --wait -d
 
 stack-stop:

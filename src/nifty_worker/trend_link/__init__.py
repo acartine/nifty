@@ -4,7 +4,7 @@ import logging
 from nifty_common.config import cfg
 from nifty_common.types import Channel
 from nifty_worker.common.worker import init_logger
-from nifty_worker.trend_link_worker.trend_link_worker import TrendLinkWorker
+from .trend_link import TrendLinkWorker
 
 init_logger()
 worker = TrendLinkWorker()
