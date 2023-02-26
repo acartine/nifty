@@ -8,6 +8,7 @@ class Channel(str, Enum):
     action = 'action'
     trend = 'trend'
     trend_link = 'trend:link'
+    enrichment = 'trend:link:enrichment'
 
 
 class ActionType(str, Enum):
@@ -43,3 +44,8 @@ class TrendEvent(Meta):
 class TrendLinkEvent(DownstreamEvent):
     short_url: str
     added: bool
+
+
+class EnrichmentEvent(DownstreamEvent):
+    short_urk: str
+    image_key: str

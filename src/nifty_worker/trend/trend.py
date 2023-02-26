@@ -2,7 +2,6 @@ import logging
 from typing import Dict, NamedTuple, Optional, Set
 from uuid import uuid1
 
-from nifty_common.config import cfg
 from nifty_common.constants import REDIS_TRENDING_KEY, REDIS_TRENDING_SIZE_KEY
 from nifty_common.helpers import none_throws, timestamp_ms, trending_size
 from nifty_common.types import Action, ActionType, Channel, TrendEvent
@@ -25,9 +24,15 @@ class TopLink(NamedTuple):
 
 class TrendWorker(NiftyWorker[Action]):
 
-    def __init__(self):
+    def __init__(self, *,
+                 trend_size: int,
+                 toplist_interval_sec: int,
+                 toplist_bucket_len_sec: int):
         super().__init__()
         self._toplist: Optional[AbstractTopList] = None
+        self.trend_size = trend_size
+        self.toplist_interval_sec = toplist_interval_sec
+        self.toplist_bucket_len_sec = toplist_bucket_len_sec
 
     def toplist(self) -> AbstractTopList:
         return none_throws(
@@ -35,7 +40,7 @@ class TrendWorker(NiftyWorker[Action]):
             "self._toplist is not set - did you start the worker?")
 
     def __set_size(self):
-        newsize = cfg.getint(Channel.trend, 'size')
+        newsize = self.trend_size
         with self.redis().pipeline() as pipe:
             pipe.watch(REDIS_TRENDING_SIZE_KEY)
             cursize = trending_size(pipe, throws=False)
@@ -58,11 +63,11 @@ class TrendWorker(NiftyWorker[Action]):
 
         self._toplist = RedisTopList(
             REDIS_TRENDING_KEY,
-            cfg.getint(Channel.trend, 'toplist_interval_sec'),
+            self.toplist_interval_sec,
             self.redis(),
             listener=on_toplist_change,
             ctor=str,
-            bucket_len_sec=cfg.getint(Channel.trend, 'bucket_len_sec'))
+            bucket_len_sec=self.toplist_bucket_len_sec)
 
     def unpack(self, msg: Dict[str, any]) -> Action:
         return Action.parse_raw(msg['data'])
