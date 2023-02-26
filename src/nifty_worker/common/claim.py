@@ -5,6 +5,7 @@ from redis.asyncio.client import Redis as AsyncRedis
 from nifty_common.helpers import async_retry, retry
 
 
+# touch
 @retry(max_tries=3, stack_id=__name__)
 def claim(redis: Redis, key: str | int, lifetime_sec: int) -> bool:
     with redis.pipeline() as pipe:

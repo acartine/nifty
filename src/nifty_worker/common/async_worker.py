@@ -1,13 +1,15 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
+from typing import Dict, Optional, TypeVar
 
 from redis.asyncio.client import Redis
 
-from nifty_worker.claim import async_claim
+from .claim import async_claim
 from nifty_common.helpers import get_redis_async
 from nifty_common.types import Channel
-from nifty_worker.worker import BaseNiftyWorker, T
+from .worker import BaseNiftyWorker
+
+T = TypeVar('T')
 
 
 class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):

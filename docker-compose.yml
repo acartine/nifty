@@ -38,6 +38,7 @@ services:
 
   nginx:
     profiles:
+      - base
       - all
     container_name: nginx
     image: nginx:1.23.3
@@ -70,6 +71,7 @@ services:
 
   nifty:
     profiles:
+      - base
       - all
     container_name: nifty
     image: acartine/nifty:v1
@@ -88,8 +90,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      worker-trend:
-        condition: service_started
     networks:
       - nw
 

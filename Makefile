@@ -34,8 +34,8 @@ db-wipe:
 docker-build: py-clean
 	docker build -t acartine/nifty:v1 ${ARGS} .
 
-worker-docker-build: py-clean
-	docker build . -f docker/worker.dockerfile -t acartine/nifty-worker-trend:v1 ${ARGS}
+trend-worker-docker-build: py-clean
+	docker build . -f docker/worker.dockerfile --target worker-trend -t acartine/nifty-worker-trend:v1
 
 docker-run: docker-build
 	docker run --env-file .env -p 127.0.0.1:5000:5000 --name nifty -d acartine/nifty:v1
@@ -66,11 +66,18 @@ run-trend-link-worker-local:
 run-trend-worker-local:
 	PYTHONPATH=src pipenv run python -m nifty_worker.trend_worker
 
-stack-run: docker-build
+stack-run: docker-build trend-worker-docker-build
 	docker compose --profile all up --wait -d
 
 stack-stop:
 	docker compose --profile all down
+
+
+stack-base-run: docker-build
+	docker compose --profile base up --wait -d
+
+stack-base-stop:
+	docker compose --profile base down
 
 test: stack-stop db-wipe stack-run db-apply-local
 	pushd ui && yarn cypress run ${ARGS}; \
