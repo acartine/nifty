@@ -1,15 +1,9 @@
-import asyncio
-import logging
 from typing import Dict
 from uuid import uuid1
 
-from nifty_worker.async_worker import AsyncNiftyWorker
-from nifty_common.config import cfg
 from nifty_common.helpers import timestamp_ms
-from nifty_common.types import Channel, TrendLinkEvent, TrendEvent, UpstreamSource
-from nifty_worker.worker import init_logger
-
-init_logger()
+from nifty_common.types import Channel, TrendEvent, TrendLinkEvent, UpstreamSource
+from nifty_worker.common.async_worker import AsyncNiftyWorker
 
 
 class TrendLinkWorker(AsyncNiftyWorker[TrendEvent]):
@@ -32,13 +26,3 @@ class TrendLinkWorker(AsyncNiftyWorker[TrendEvent]):
 
     def unpack(self, msg: Dict[str, any]) -> TrendEvent:
         return TrendEvent.parse_raw(msg['data'])
-
-
-if __name__ == '__main__':
-    worker = TrendLinkWorker()
-    logging.getLogger(__name__).debug('launching asyncio')
-    asyncio.run(
-        worker.run(
-            src_channel=Channel.trend,
-            listen_interval=cfg.getint(Channel.trend_link,
-                                       'listen_interval_sec')))

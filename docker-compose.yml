@@ -52,12 +52,27 @@ services:
     networks:
       - nw
 
-
   worker-trend:
     profiles:
       - all
     container_name: worker-trend
     image: acartine/nifty-worker-trend:v1
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - REDIS_HOST=redis
+      - REDIS_PWD=${REDIS_PWD}
+      - REDIS_USER=${REDIS_USER}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - nw
+
+  worker-trend-link:
+    profiles:
+      - all
+    container_name: worker-trend-link
+    image: acartine/nifty-worker-trend-link:v1
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - REDIS_HOST=redis

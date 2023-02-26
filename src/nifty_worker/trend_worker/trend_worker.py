@@ -6,10 +6,8 @@ from nifty_common.config import cfg
 from nifty_common.constants import REDIS_TRENDING_KEY, REDIS_TRENDING_SIZE_KEY
 from nifty_common.helpers import none_throws, timestamp_ms, trending_size
 from nifty_common.types import Action, ActionType, Channel, TrendEvent
-from nifty_worker.common.worker import NiftyWorker, init_logger
+from nifty_worker.common.worker import NiftyWorker
 from nifty_worker.trend_worker.toplist import AbstractTopList, RedisTopList
-
-init_logger()
 
 
 # redis doesn't really have great datastructures for this
