@@ -28,7 +28,7 @@ handler.setFormatter(formatter)
 root.addHandler(handler)
 
 logger = logging.getLogger(__name__)
-app = Flask(__name__)
+app = Flask(__name__, static_folder=None)
 
 
 class ShortenRequest(BaseModel):
@@ -56,7 +56,7 @@ def favicon():
 @app.route('/<path:subpath>')
 def static_files(subpath):
     # Serve any other files from the static directory
-    logger.debug(f"sending {subpath} from 'static'")
+    logger.error(f"sending {subpath} from 'static'")
     return send_from_directory('static', subpath)
 
 
