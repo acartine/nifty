@@ -1,18 +1,16 @@
 import atexit
 import logging
-from dataclasses import dataclass
-from datetime import datetime
 from typing import Callable, List, Tuple, TypeVar
 
 from psycopg import Cursor
 from psycopg.rows import BaseRowFactory, class_row
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
-from redis_lru import RedisLRU
 
 from nifty_common.config import cfg
 from nifty_common.constants import REDIS_TRENDING_KEY
-from nifty_common.helpers import get_redis, trending_size
+from nifty_common.redis_helpers import get_redis, trending_size
+from nifty_common.types import Key, Link, RedisConstants
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')
@@ -20,26 +18,13 @@ R = TypeVar('R')
 _conninfo = f"postgresql://{cfg['postgres']['user']}:{cfg['postgres']['pwd']}" \
             f"@{cfg['postgres']['host']}/postgres"
 _pool = ConnectionPool(conninfo=_conninfo)
-redis_client = get_redis()
-_long_url_cache = RedisLRU(redis_client)
+redis_client = get_redis(RedisConstants.STD)
+cache = get_redis(RedisConstants.CACHE)
 
 
 @atexit.register
 def close():
     _pool.close()
-
-
-@dataclass
-class Link:
-    id: int
-    created_at: datetime
-    long_url_id: int
-    short_url_id: int
-    long_url: str
-    short_url: str
-
-    def created_at_ms(self) -> int:
-        return int(self.created_at.timestamp() * 1000)
 
 
 class TrendingItem(BaseModel):
@@ -54,18 +39,15 @@ class Trending(BaseModel):
     list: List[TrendingItem]
 
 
-@dataclass
-class Id:
+class Id(BaseModel):
     id: int | None = None
 
 
-@dataclass
-class Url:
+class Url(BaseModel):
     url: str | None = None
 
 
-@dataclass
-class UrlRow:
+class UrlRow(BaseModel):
     id: int
     url: str
 
@@ -165,7 +147,7 @@ def upsert_link(long_url_id: int, short_url: str) -> Link:
         raise Exception("Unable to get or create long url from ${long_url}")
 
     # update the cache, otherwise it's memoized to None
-    _long_url_cache.set(ret.short_url, ret)
+    cache.hset(f"{Key.long_url_by_short_url}:{ret.short_url}", mapping=ret.dict())
     return ret
 
 
@@ -186,6 +168,7 @@ ON l.id = k.long_url_id;
 
 @_long_url_cache
 def get_long_url(short_url: str) -> Link | None:
+
     return _ex_one(_long_url_sql, (short_url,), class_row(Link))
 
 

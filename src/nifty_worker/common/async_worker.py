@@ -4,9 +4,9 @@ from typing import Dict, Optional, TypeVar
 
 from redis.asyncio.client import Redis
 
+from nifty_common.redis_helpers import get_redis_async
+from nifty_common.types import Channel, RedisConstants
 from .claim import async_claim
-from nifty_common.helpers import get_redis_async
-from nifty_common.types import Channel
 from .worker import BaseNiftyWorker
 
 T = TypeVar('T')
@@ -32,7 +32,7 @@ class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):
 
     def redis(self) -> Redis:
         if not self.__redis:
-            self.__redis = get_redis_async()
+            self.__redis = get_redis_async(RedisConstants.STD)
         return self.__redis
 
     async def __handle(self, channel: Channel, msg: Dict[str, any]):
@@ -53,14 +53,14 @@ class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):
     async def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
         logging.getLogger(__name__).debug('initializing')
         self.before_start()
-        redis = get_redis_async()  # docs say to use diff redis for read, not sure this is true
+        redis = get_redis_async(RedisConstants.STD)  # docs say to use diff redis for read, not sure this is true
         async with redis.pubsub(ignore_subscribe_messages=True) as pubsub:
             await pubsub.subscribe(src_channel)
             self.running = True
             while self.running:
                 logging.getLogger(__name__).debug('entering get_message')
                 msg = await pubsub.get_message(
-                        ignore_subscribe_messages=True,
-                        timeout=listen_interval)
+                    ignore_subscribe_messages=True,
+                    timeout=listen_interval)
                 logging.getLogger(__name__).debug(f"exiting get_message with {msg}")
                 await self.__handle(src_channel, msg)

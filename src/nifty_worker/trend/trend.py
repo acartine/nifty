@@ -3,7 +3,9 @@ from typing import Dict, NamedTuple, Optional, Set
 from uuid import uuid1
 
 from nifty_common.constants import REDIS_TRENDING_KEY, REDIS_TRENDING_SIZE_KEY
-from nifty_common.helpers import none_throws, timestamp_ms, trending_size
+from nifty_common.helpers import none_throws, timestamp_ms
+from nifty_common.redis_helpers import trending_size
+
 from nifty_common.types import Action, ActionType, Channel, TrendEvent
 from nifty_worker.common.worker import NiftyWorker
 from nifty_worker.trend.toplist import AbstractTopList, RedisTopList

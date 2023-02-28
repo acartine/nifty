@@ -1,7 +1,23 @@
+import datetime
+from dataclasses import dataclass
 from enum import Enum
 from typing import List, Set
 
 from pydantic import BaseModel
+
+
+@dataclass
+class RedisType:
+    cfg_key: str
+
+
+class RedisConstants(RedisType, Enum):
+    STD = RedisType("redis"),
+    CACHE = RedisType("redis-cache")
+
+
+class Key(str, Enum):
+    long_url_by_short_url = 'nifty:long_url_by_short_url'
 
 
 class Channel(str, Enum):
@@ -9,6 +25,18 @@ class Channel(str, Enum):
     trend = 'nifty:trend'
     trend_link = 'nifty:trend:link'
     image_builder = 'nifty:trend:link:image'
+
+
+class Link(BaseModel):
+    id: int
+    created_at: datetime
+    long_url_id: int
+    short_url_id: int
+    long_url: str
+    short_url: str
+
+    def created_at_ms(self) -> int:
+        return int(self.created_at.timestamp() * 1000)
 
 
 class ActionType(str, Enum):

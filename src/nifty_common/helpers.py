@@ -4,23 +4,7 @@ import logging
 import time
 from typing import Awaitable, Callable, Optional, ParamSpec, TypeVar
 
-from redis.client import Redis
-from redis.asyncio.client import Redis as AsyncRedis
-
-from nifty_common.config import cfg
-from nifty_common.constants import REDIS_TRENDING_SIZE_KEY
-
 T = TypeVar('T')
-
-
-def get_redis() -> Redis:
-    return Redis(host=cfg['redis']['host'], username=cfg['redis']['user'],
-                 password=cfg['redis']['pwd'])
-
-
-def get_redis_async() -> AsyncRedis:
-    return AsyncRedis(host=cfg['redis']['host'], username=cfg['redis']['user'],
-                      password=cfg['redis']['pwd'])
 
 
 def timestamp_ms() -> int:
@@ -87,15 +71,6 @@ def opt_or(optional: Optional[T], fallback: T) -> T:
 
 def optint_or_none(optional: Optional[T]) -> Optional[int]:
     return int(optional) if optional is not None else None
-
-
-def redis_int(redis: Redis, key: str, throws: Optional[bool] = True) -> Optional[int]:
-    raw = redis.get(key)
-    return noneint_throws(raw, key) if throws else optint_or_none(raw)
-
-
-def trending_size(redis: Redis, throws: Optional[bool] = True) -> Optional[int]:
-    return redis_int(redis, REDIS_TRENDING_SIZE_KEY, throws)
 
 
 def none_throws(optional: Optional[T], msg: str) -> T:

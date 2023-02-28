@@ -6,8 +6,8 @@ from typing import Dict, Generic, Optional, TypeVar
 from redis.client import Redis
 
 from .claim import claim
-from nifty_common.helpers import get_redis
-from nifty_common.types import Channel, Meta
+from nifty_common.redis_helpers import get_redis
+from nifty_common.types import Channel, Meta, RedisConstants
 
 T = TypeVar('T', bound=Meta)
 
@@ -69,7 +69,7 @@ class NiftyWorker(BaseNiftyWorker[T], ABC):
 
     def redis(self) -> Redis:
         if not self.__redis:
-            self.__redis = get_redis()
+            self.__redis = get_redis(RedisConstants.STD)
         return self.__redis
 
     def __handle(self, channel: Channel, msg: Dict[str, any]):
@@ -85,7 +85,7 @@ class NiftyWorker(BaseNiftyWorker[T], ABC):
 
     def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
         self.before_start()
-        redis = get_redis()  # docs say to use diff reais for read, not sure this is true
+        redis = get_redis(RedisConstants.STD)  # docs say to use diff reais for read, not sure this is true
         pubsub = redis.pubsub(ignore_subscribe_messages=True)
         pubsub.subscribe(src_channel)
         self.running = True
