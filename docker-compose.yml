@@ -36,19 +36,19 @@ services:
     networks:
       - nw
 
-  nginx:
-    profiles:
-      - base
-      - all
-    container_name: nginx
-    image: nginx:1.23.3
+  redis-cache:
+    container_name: redis-cache
+    image: redis:7.0.7
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli --user healthcheck --pass hclocal ping | grep PONG" ]
+      interval: 1s
+      timeout: 30s
+      retries: 30
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./src/static:/app/static
+      - ./redis-cache.conf:/usr/local/etc/redis/redis.conf
     ports:
-      - "8080:80"
-    depends_on:
-      - nifty
+      - "6380:6379"
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
       - nw
 
@@ -62,8 +62,13 @@ services:
       - REDIS_HOST=redis
       - REDIS_PWD=${REDIS_PWD}
       - REDIS_USER=${REDIS_USER}
+      - REDIS_CACHE_HOST=redis-cache
+      - REDIS_CACHE_PWD=${REDIS_PWD}
+      - REDIS_CACHE_USER=${REDIS_USER}
     depends_on:
       redis:
+        condition: service_healthy
+      redis-cache:
         condition: service_healthy
     networks:
       - nw
@@ -78,8 +83,13 @@ services:
       - REDIS_HOST=redis
       - REDIS_PWD=${REDIS_PWD}
       - REDIS_USER=${REDIS_USER}
+      - REDIS_CACHE_HOST=redis-cache
+      - REDIS_CACHE_PWD=${REDIS_PWD}
+      - REDIS_CACHE_USER=${REDIS_USER}
     depends_on:
       redis:
+        condition: service_healthy
+      redis-cache:
         condition: service_healthy
     networks:
       - nw
@@ -100,11 +110,32 @@ services:
       - REDIS_HOST=redis
       - REDIS_PWD=${REDIS_PWD}
       - REDIS_USER=${REDIS_USER}
+      - REDIS_CACHE_HOST=redis-cache
+      - REDIS_CACHE_PWD=${REDIS_PWD}
+      - REDIS_CACHE_USER=${REDIS_USER}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - nw
+
+  nginx:
+    profiles:
+      - base
+      - all
+    container_name: nginx
+    image: nginx:1.23.3
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./src/static:/app/static
+    ports:
+      - "8080:80"
+    depends_on:
+      - nifty
     networks:
       - nw
 

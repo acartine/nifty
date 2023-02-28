@@ -5,10 +5,10 @@ from pydantic import BaseModel
 
 
 class Channel(str, Enum):
-    action = 'action'
-    trend = 'trend'
-    trend_link = 'trend:link'
-    enrichment = 'trend:link:enrichment'
+    action = 'nifty:action'
+    trend = 'nifty:trend'
+    trend_link = 'nifty:trend:link'
+    image_builder = 'nifty:trend:link:image'
 
 
 class ActionType(str, Enum):
@@ -46,6 +46,6 @@ class TrendLinkEvent(DownstreamEvent):
     added: bool
 
 
-class EnrichmentEvent(DownstreamEvent):
-    short_urk: str
+class ImageEvent(DownstreamEvent):
+    short_url: str
     image_key: str

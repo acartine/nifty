@@ -7,8 +7,7 @@ from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
 
 from nifty.base62 import base62_encode
-from nifty.store import Link, get_trending, get_long_url, get_short_url, redis_client, upsert_link, \
-    upsert_long_url
+from nifty.store import Link, get_long_url, get_short_url, get_trending, redis_client, upsert_link, upsert_long_url
 from nifty_common.config import cfg
 from nifty_common.helpers import timestamp_ms
 from nifty_common.types import Action, ActionType, Channel
@@ -79,7 +78,17 @@ def shorten(body: ShortenRequest):
     logger.debug(f"generated {short_url}")
 
     # Save the long URL and short URL in the database
-    upsert_link(long_url_id, short_url)
+    link = upsert_link(long_url_id, short_url)
+
+    # TODO maybe do this async after returning the response
+    redis_client.publish(Channel.action,
+                         Action(
+                             uuid=str(uuid1()),
+                             type=ActionType.create,
+                             at=timestamp_ms(),
+                             link_id=link.id,
+                             short_url=link.short_url,
+                             long_url=link.long_url).json())
 
     return jsonify({'short_url': short_url}), 201
 
