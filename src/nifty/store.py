@@ -1,6 +1,6 @@
 import atexit
 import logging
-from typing import Callable, List, Tuple, TypeVar
+from typing import Callable, List, Optional, Tuple, TypeVar
 
 from psycopg import Cursor
 from psycopg.rows import BaseRowFactory, class_row
@@ -9,7 +9,8 @@ from pydantic import BaseModel
 
 from nifty_common.config import cfg
 from nifty_common.constants import REDIS_TRENDING_KEY
-from nifty_common.redis_helpers import get_redis, trending_size
+from nifty_common.helpers import retry
+from nifty_common.redis_helpers import get_redis, redis_int, redis_key, redis_obj, trending_size
 from nifty_common.types import Key, Link, RedisConstants
 
 _logger = logging.getLogger(__name__)
@@ -139,7 +140,30 @@ ON l.id = %s AND l.id = ul.long_url_id;
     """
 
 
+@retry(max_tries=3, stack_id=__name__)
+def _cache_upsert_link(link: Link):
+    with cache.pipeline() as p:
+        p.hset(redis_key(Key.link_by_link_id, link.id), mapping=link.dict())
+        p.set(redis_key(Key.link_id_cache, link.short_url), link.id)
+        p.set(redis_key(Key.long_by_short, link.short_url), link.long_url)
+
+
+@retry(max_tries=3, stack_id=__name__)
+def _get_link_from_cache(short_url: str) -> Optional[Link]:
+    link_id = redis_int(cache,
+                        redis_key(Key.link_id_cache,
+                                  short_url),
+                        throws=False)
+
+    return redis_obj(cache, redis_key(Key.link_by_link_id, link_id), Link,
+                     throws=False) if link_id is not None else None
+
+
 def upsert_link(long_url_id: int, short_url: str) -> Link:
+    link = _get_link_from_cache(short_url)
+    if link is not None:
+        return link
+
     params = (short_url, long_url_id, short_url, long_url_id, short_url,
               long_url_id, long_url_id)
     ret = _ex_one(_link_sql, params, class_row(Link))
@@ -147,7 +171,7 @@ def upsert_link(long_url_id: int, short_url: str) -> Link:
         raise Exception("Unable to get or create long url from ${long_url}")
 
     # update the cache, otherwise it's memoized to None
-    cache.hset(f"{Key.long_url_by_short_url}:{ret.short_url}", mapping=ret.dict())
+    _cache_upsert_link(ret)
     return ret
 
 
@@ -166,10 +190,15 @@ ON l.id = k.long_url_id;
     """
 
 
-@_long_url_cache
 def get_long_url(short_url: str) -> Link | None:
+    link = _get_link_from_cache(short_url)
+    if link is None:
+        link = _ex_one(_long_url_sql, (short_url,), class_row(Link))
+        if link is None:
+            return None
+        _cache_upsert_link(link)
 
-    return _ex_one(_long_url_sql, (short_url,), class_row(Link))
+    return link
 
 
 links_by_ids_sql = """

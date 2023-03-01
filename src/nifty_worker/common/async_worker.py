@@ -53,7 +53,7 @@ class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):
     async def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
         logging.getLogger(__name__).debug('initializing')
         self.before_start()
-        redis = get_redis_async(RedisConstants.STD)  # docs say to use diff redis for read, not sure this is true
+        redis = get_redis_async(RedisConstants.STD)  # STD does not have LRU memory limit
         async with redis.pubsub(ignore_subscribe_messages=True) as pubsub:
             await pubsub.subscribe(src_channel)
             self.running = True

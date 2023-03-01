@@ -17,7 +17,9 @@ class RedisConstants(RedisType, Enum):
 
 
 class Key(str, Enum):
-    long_url_by_short_url = 'nifty:long_url_by_short_url'
+    link_id_cache = 'nifty:linkid:byshorturl'
+    link_by_link_id = 'nifty:link:bylinkid'
+    long_by_short = 'nifty:longurl:byshorturl'
 
 
 class Channel(str, Enum):
