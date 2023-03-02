@@ -19,7 +19,8 @@ class Key(str, Enum):
     link_id_cache = 'nifty:linkid:byshorturl'
     link_by_link_id = 'nifty:link:bylinkid'
     long_by_short = 'nifty:longurl:byshorturl'
-
+    trending = 'nifty:trending'
+    trending_size = 'nifty:trending:size'
     def sub(self, *subscript: str | int) -> str:
         return f"{self.value}:{'.'.join([str(s) for s in subscript])}"
 

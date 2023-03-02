@@ -10,7 +10,7 @@ markupsafe==2.1.2 ; python_version >= '3.7'
 psycopg[pool]==3.1.8
 psycopg-pool==3.1.6
 pydantic==1.10.5
-redis==4.4.2
+redis==4.5.1
 setuptools==67.4.0 ; python_version >= '3.7'
 typing-extensions==4.5.0 ; python_version >= '3.7'
 werkzeug==2.2.3 ; python_version >= '3.7'

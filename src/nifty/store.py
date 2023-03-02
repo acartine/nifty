@@ -8,7 +8,6 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
 from nifty_common import cfg
-from nifty_common.constants import REDIS_TRENDING_KEY
 from nifty_common.helpers import retry
 from nifty_common.redis_helpers import get_redis, rint, robj, trending_size
 from nifty_common.types import Key, Link, RedisType
@@ -245,7 +244,7 @@ def get_trending() -> Trending:
         return Trending(list=[])
 
     results: List[Tuple[int, int]] = \
-        redis_client.zrange(REDIS_TRENDING_KEY,
+        redis_client.zrange(Key.trending,
                             0, trending_size(redis_client),
                             desc=True,
                             withscores=True)

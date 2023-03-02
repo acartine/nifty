@@ -41,10 +41,6 @@ class AbstractTopList(Generic[T], abc.ABC):
     def reap(self, ts: int):
         pass
 
-    @abstractmethod
-    def get(self, ts_ms: int) -> List[Entry[T]]:
-        pass
-
 
 class RedisTopList(AbstractTopList[T]):
 
@@ -181,7 +177,3 @@ class RedisTopList(AbstractTopList[T]):
         pipe.zincrby(self.__bucket_key(bucket_key), -1, key) \
             .zincrby(self.toplist_set, 1, key) \
             .execute()
-
-    def get(self, ts_ms: int) -> List[Entry[T]]:
-        self.reap(ts_ms=ts_ms)
-        return self.__get()

@@ -10,7 +10,7 @@ TREND_LINK_CONFIG_KEY = "trend_link"
 
 log.log_init()
 worker = TrendLinkWorker()
-logging.getLogger(__name__).debug('launching asyncio')
+logging.debug('launching asyncio')
 asyncio.run(
     worker.run(
         src_channel=Channel.trend,

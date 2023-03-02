@@ -20,14 +20,6 @@ class BaseNiftyWorker(Generic[T], ABC):
     def __init__(self):
         self.running = False
 
-    def before_start(self):
-        """
-        Called after Redis is opened and before the listening starts
-        Override this if you need to initialize things
-        :return: None
-        """
-        ...
-
     @abstractmethod
     def unpack(self, msg: Dict[str, any]) -> T:
         ...
@@ -43,6 +35,9 @@ class NiftyWorker(BaseNiftyWorker[T], ABC):
 
     @abstractmethod
     def on_event(self, channel: Channel, msg: T):
+        ...
+
+    def before_start(self):
         ...
 
     def on_yield(self):
