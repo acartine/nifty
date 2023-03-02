@@ -56,7 +56,7 @@ py-clean:
 	pipenv run pyclean .
 
 run-app-local:
-	REDIS_CACHE_PORT=6380 PYTHONPATH=src pipenv run flask --debug run
+	PRIMARY_CFG=local PYTHONPATH=src pipenv run flask --debug run
 
 run-dev: datastore-run run-app-local
 

@@ -29,7 +29,7 @@ services:
       timeout: 30s
       retries: 30
     volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
@@ -45,7 +45,7 @@ services:
       timeout: 30s
       retries: 30
     volumes:
-      - ./redis-cache.conf:/usr/local/etc/redis/redis.conf
+      - ./config/redis-cache.conf:/usr/local/etc/redis/redis.conf
     ports:
       - "6380:6379"
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
@@ -111,8 +111,9 @@ services:
       - REDIS_PWD=${REDIS_PWD}
       - REDIS_USER=${REDIS_USER}
       - REDIS_CACHE_HOST=redis-cache
-      - REDIS_CACHE_PWD=${REDIS_PWD}
-      - REDIS_CACHE_USER=${REDIS_USER}
+      - REDIS_CACHE_PWD=${REDIS_CACHE_PWD}
+      - REDIS_CACHE_USER=${REDIS_CACHE_USER}
+      - REDIS_CACHE_PORT
     depends_on:
       postgres:
         condition: service_healthy
@@ -130,7 +131,7 @@ services:
     container_name: nginx
     image: nginx:1.23.3
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./src/static:/app/static
     ports:
       - "8080:80"
