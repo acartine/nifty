@@ -1,11 +1,10 @@
-from nifty_common.config import cfg
+from nifty_common import cfg, log
 from nifty_common.types import Channel
-from nifty_worker.common.worker import init_logger
 from .trend import TrendWorker
 
 TREND_CONFIG_KEY = 'trend'
 
-init_logger()
+log.log_init()
 trend = TrendWorker(
     trend_size=cfg.getint(TREND_CONFIG_KEY, 'size'),
     toplist_interval_sec=cfg.getint(TREND_CONFIG_KEY, 'toplist_interval_sec'),

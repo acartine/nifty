@@ -1,14 +1,14 @@
 import asyncio
 import logging
 
-from nifty_common.config import cfg
+from nifty_common import cfg
 from nifty_common.types import Channel
-from nifty_worker.common.worker import init_logger
+from nifty_common import log
 from .trend_link import TrendLinkWorker
 
 TREND_LINK_CONFIG_KEY = "trend_link"
 
-init_logger()
+log.log_init()
 worker = TrendLinkWorker()
 logging.getLogger(__name__).debug('launching asyncio')
 asyncio.run(

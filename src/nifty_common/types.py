@@ -68,17 +68,15 @@ class DownstreamEvent(Meta):
 class Action(Meta):
     type: ActionType
     link_id: int
-    short_url: str
-    long_url: str
 
 
 class TrendEvent(Meta):
-    added: Set[str]
-    removed: Set[str]
+    added: Set[int]
+    removed: Set[int]
 
 
 class TrendLinkEvent(DownstreamEvent):
-    short_url: str
+    link_id: int
     added: bool
 
 

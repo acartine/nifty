@@ -5,7 +5,7 @@ from typing import Dict, Optional, TypeVar
 from redis.asyncio.client import Redis
 
 from nifty_common.redis_helpers import get_redis_async
-from nifty_common.types import Channel, RedisConstants
+from nifty_common.types import Channel, RedisType
 from .claim import async_claim
 from .worker import BaseNiftyWorker
 
@@ -32,7 +32,7 @@ class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):
 
     def redis(self) -> Redis:
         if not self.__redis:
-            self.__redis = get_redis_async(RedisConstants.STD)
+            self.__redis = get_redis_async(RedisType.STD)
         return self.__redis
 
     async def __handle(self, channel: Channel, msg: Dict[str, any]):
@@ -53,7 +53,7 @@ class AsyncNiftyWorker(BaseNiftyWorker[T], ABC):
     async def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
         logging.getLogger(__name__).debug('initializing')
         self.before_start()
-        redis = get_redis_async(RedisConstants.STD)  # STD does not have LRU memory limit
+        redis = get_redis_async(RedisType.STD)  # STD does not have LRU memory limit
         async with redis.pubsub(ignore_subscribe_messages=True) as pubsub:
             await pubsub.subscribe(src_channel)
             self.running = True

@@ -7,7 +7,7 @@ from psycopg.rows import BaseRowFactory, class_row
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel
 
-from nifty_common.config import cfg
+from nifty_common import cfg
 from nifty_common.constants import REDIS_TRENDING_KEY
 from nifty_common.helpers import retry
 from nifty_common.redis_helpers import get_redis, rint, robj, trending_size
@@ -16,8 +16,8 @@ from nifty_common.types import Key, Link, RedisType
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')
 R = TypeVar('R')
-_conninfo = f"postgresql://{cfg['postgres']['user']}:{cfg['postgres']['pwd']}" \
-            f"@{cfg['postgres']['host']}/postgres"
+_conninfo = f"postgresql://{cfg.get('postgres', 'user')}:{cfg.get('postgres', 'pwd')}" \
+            f"@{cfg.get('postgres', 'host')}/postgres"
 _pool = ConnectionPool(conninfo=_conninfo)
 redis_client = get_redis(RedisType.STD)
 cache = get_redis(RedisType.CACHE)

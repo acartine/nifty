@@ -2,7 +2,7 @@ FROM python:3.10 as common
 COPY /src/nifty_worker/requirements.txt /app/requirements.txt
 WORKDIR /app
 RUN python -m pip install -r requirements.txt
-COPY config.ini /app/config.ini
+COPY /config/config.ini /app/config/config.ini
 COPY /src/nifty_common/ /app/nifty_common
 COPY /src/nifty_worker/__init__.py /app/nifty_worker/__init__.py
 COPY /src/nifty_worker/common/ /app/nifty_worker/common

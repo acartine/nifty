@@ -12,7 +12,6 @@ from nifty_common.constants import REDIS_TRENDING_SIZE_KEY
 from nifty_common.helpers import noneint_throws, retry
 
 T = TypeVar('T')
-R = TypeVar('R')
 Param = ParamSpec("Param")
 RetType = TypeVar("RetType")
 OriginalFunc = Callable[Param, RetType]
@@ -111,14 +110,12 @@ class RedisTopList(AbstractTopList[T]):
     def __get(self) -> List[Entry[T]]:
         size = noneint_throws(self.redis.get(REDIS_TRENDING_SIZE_KEY),
                               REDIS_TRENDING_SIZE_KEY)
-        _logger.debug(size)
         foo = self.redis.zrange(self.toplist_set,
                                 start=0,
                                 end=size,
                                 desc=True,
                                 withscores=True,
                                 score_cast_func=int)
-        _logger.debug(foo)
         return [Entry(self.ctor(k), v) for k, v in foo]
 
     @staticmethod

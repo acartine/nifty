@@ -1,5 +1,4 @@
 import logging
-import sys
 from uuid import uuid1
 
 from flask import Flask, jsonify, redirect, send_from_directory
@@ -8,25 +7,13 @@ from pydantic import BaseModel, HttpUrl
 
 from nifty.base62 import base62_encode
 from nifty.store import Link, get_long_url, get_short_url, get_trending, redis_client, upsert_link, upsert_long_url
-from nifty_common.config import cfg
 from nifty_common.helpers import timestamp_ms
+from nifty_common.log import log_init
 from nifty_common.types import Action, ActionType, Channel
 
 # TODO set up blueprints
 
-log_level = cfg['logging'].get('level', 'WARN')
-log_level_val = getattr(logging, log_level.upper())
-print(f"Log level set to {log_level} {log_level_val}")
-root = logging.getLogger()
-root.setLevel(log_level_val)
-
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(log_level_val)
-formatter = logging.Formatter(
-    '%(asctime)s %(levelname)-8s '
-    '[%(filename)s:%(lineno)d] %(funcName)s() => %(message)s')
-handler.setFormatter(formatter)
-root.addHandler(handler)
+log_init()
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder=None)
@@ -112,9 +99,7 @@ def lookup(short_url):
                                  uuid=str(uuid1()),
                                  type=ActionType.get,
                                  at=timestamp_ms(),
-                                 link_id=link.id,
-                                 short_url=link.short_url,
-                                 long_url=link.long_url).json())
+                                 link_id=link.id).json())
         return redirect(link.long_url)
     else:
         return 'Short URL not found', 404

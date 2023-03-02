@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from redis.asyncio.client import Redis as AsyncRedis
 from redis.client import Redis
 
-from nifty_common.config import cfg
+from nifty_common import cfg
 from nifty_common.constants import REDIS_TRENDING_SIZE_KEY
 from nifty_common.helpers import none_throws, noneint_throws, optint_or_none
 from nifty_common.types import Key, RedisType
@@ -15,17 +15,17 @@ TBaseModel = TypeVar('TBaseModel', bound=BaseModel)
 
 def get_redis(redis_type: RedisType) -> Redis:
     print(redis_type.cfg_key)
-    return Redis(host=cfg[redis_type.cfg_key]['host'],
-                 username=cfg[redis_type.cfg_key]['user'],
-                 password=cfg[redis_type.cfg_key]['pwd'],
-                 port=cfg[redis_type.cfg_key].getint('port', 6379),
+    return Redis(host=cfg.get(redis_type.cfg_key, 'host'),
+                 username=cfg.get(redis_type.cfg_key, 'user'),
+                 password=cfg.get(redis_type.cfg_key, 'pwd'),
+                 port=cfg.getint(redis_type.cfg_key, 'port', 6379),
                  decode_responses=True)
 
 
 def get_redis_async(redis_type: RedisType) -> AsyncRedis:
-    return AsyncRedis(host=cfg[redis_type.cfg_key]['host'],
-                      username=cfg[redis_type.cfg_key]['user'],
-                      password=cfg[redis_type.cfg_key]['pwd'],
+    return AsyncRedis(host=cfg.get(redis_type.cfg_key, 'host'),
+                      username=cfg.get(redis_type.cfg_key, 'user'),
+                      password=cfg.get(redis_type.cfg_key, 'pwd'),
                       decode_responses=True)
 
 
