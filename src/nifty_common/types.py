@@ -1,25 +1,27 @@
-import datetime
-from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from typing import List, Set
+from typing import Dict, List, Set
 
 from pydantic import BaseModel
 
-
-@dataclass
-class RedisType:
-    cfg_key: str
+from nifty_common.helpers import timestamp_ms
 
 
-class RedisConstants(RedisType, Enum):
-    STD = RedisType("redis"),
-    CACHE = RedisType("redis-cache")
+class RedisType(Enum):
+    STD = "redis",
+    CACHE = "redis-cache"
+
+    def __init__(self, cfg_key: str):
+        self.cfg_key = cfg_key
 
 
 class Key(str, Enum):
     link_id_cache = 'nifty:linkid:byshorturl'
     link_by_link_id = 'nifty:link:bylinkid'
     long_by_short = 'nifty:longurl:byshorturl'
+
+    def sub(self, *subscript: str | int) -> str:
+        return f"{self.value}:{'.'.join([str(s) for s in subscript])}"
 
 
 class Channel(str, Enum):
@@ -39,6 +41,10 @@ class Link(BaseModel):
 
     def created_at_ms(self) -> int:
         return int(self.created_at.timestamp() * 1000)
+
+    def redis_dict(self) -> Dict[str, int | str]:
+        return {**self.dict(exclude={'created_at'}),
+                'created_at': timestamp_ms(datetime_ts=self.created_at)}
 
 
 class ActionType(str, Enum):

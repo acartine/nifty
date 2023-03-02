@@ -22,7 +22,9 @@ root.setLevel(log_level_val)
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(log_level_val)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s %(levelname)-8s '
+    '[%(filename)s:%(lineno)d] %(funcName)s() => %(message)s')
 handler.setFormatter(formatter)
 root.addHandler(handler)
 

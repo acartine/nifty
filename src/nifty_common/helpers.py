@@ -2,13 +2,18 @@ import asyncio
 import functools
 import logging
 import time
+from datetime import datetime
 from typing import Awaitable, Callable, Optional, ParamSpec, TypeVar
 
 T = TypeVar('T')
 
 
-def timestamp_ms() -> int:
-    return int(time.time() * 1000)
+def timestamp_ms(*, datetime_ts: Optional[datetime] = None) -> int:
+    if datetime_ts is not None:
+        ts = datetime_ts.timestamp()
+    else:
+        ts = time.time()
+    return int(ts * 1000)
 
 
 Param = ParamSpec("Param")

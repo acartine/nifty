@@ -10,8 +10,8 @@ from pydantic import BaseModel
 from nifty_common.config import cfg
 from nifty_common.constants import REDIS_TRENDING_KEY
 from nifty_common.helpers import retry
-from nifty_common.redis_helpers import get_redis, redis_int, redis_key, redis_obj, trending_size
-from nifty_common.types import Key, Link, RedisConstants
+from nifty_common.redis_helpers import get_redis, rint, robj, trending_size
+from nifty_common.types import Key, Link, RedisType
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')
@@ -19,8 +19,8 @@ R = TypeVar('R')
 _conninfo = f"postgresql://{cfg['postgres']['user']}:{cfg['postgres']['pwd']}" \
             f"@{cfg['postgres']['host']}/postgres"
 _pool = ConnectionPool(conninfo=_conninfo)
-redis_client = get_redis(RedisConstants.STD)
-cache = get_redis(RedisConstants.CACHE)
+redis_client = get_redis(RedisType.STD)
+cache = get_redis(RedisType.CACHE)
 
 
 @atexit.register
@@ -142,21 +142,38 @@ ON l.id = %s AND l.id = ul.long_url_id;
 
 @retry(max_tries=3, stack_id=__name__)
 def _cache_upsert_link(link: Link):
+    link_key = Key.link_by_link_id.sub(link.id)
+    link_id_key = Key.link_id_cache.sub(link.short_url)
+    long_url_key = Key.long_by_short.sub(link.short_url)
     with cache.pipeline() as p:
-        p.hset(redis_key(Key.link_by_link_id, link.id), mapping=link.dict())
-        p.set(redis_key(Key.link_id_cache, link.short_url), link.id)
-        p.set(redis_key(Key.long_by_short, link.short_url), link.long_url)
+        p.watch(link_key, link_id_key, long_url_key)
+        p.multi()
+        p.hset(link_key, mapping=link.redis_dict()) \
+            .set(link_id_key, link.id) \
+            .set(long_url_key, link.long_url) \
+            .execute()
 
 
-@retry(max_tries=3, stack_id=__name__)
 def _get_link_from_cache(short_url: str) -> Optional[Link]:
-    link_id = redis_int(cache,
-                        redis_key(Key.link_id_cache,
-                                  short_url),
-                        throws=False)
+    link_id_key = Key.link_id_cache.sub(short_url)
 
-    return redis_obj(cache, redis_key(Key.link_by_link_id, link_id), Link,
-                     throws=False) if link_id is not None else None
+    # TODO make a lua script and execute both on server side
+    # we want to do this atomically, but for now let's get this working
+    link_id = rint(cache,
+                   link_id_key,
+                   throws=False)
+    if link_id is not None:
+        link_key = Key.link_by_link_id.sub(link_id)
+        link = robj(cache, link_key, Link, throws=False)
+        if link is None:
+            _logger.debug(f"cache MISS - short_url:{short_url} , link_id:{link_id}")
+            return None
+        else:
+            _logger.debug(f"cache HIT  - short_url:{short_url} , link_id:{link_id}")
+            return link
+    else:
+        _logger.debug(f"CACHE MISS - no link_id for {short_url}")
+        return None
 
 
 def upsert_link(long_url_id: int, short_url: str) -> Link:
