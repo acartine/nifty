@@ -5,7 +5,7 @@ from PIL import Image
 from selenium import webdriver
 from nifty_common.helpers import timestamp_ms
 from nifty_common.types import Channel, TrendLinkEvent, ImageEvent, UpstreamSource
-from nifty_worker.common.async_worker import AsyncNiftyWorker
+from nifty_worker.common.asyncio.worker import AsyncNiftyWorker
 
 
 class ImageBuilderWorker(AsyncNiftyWorker[TrendLinkEvent]):

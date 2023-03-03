@@ -54,6 +54,7 @@ services:
 
   trend:
     profiles:
+      - worker
       - all
     container_name: trend
     image: acartine/nifty-trend:v1
@@ -72,6 +73,7 @@ services:
 
   trend-link:
     profiles:
+      - worker
       - all
     container_name: trend-link
     image: acartine/nifty-trend-link:v1

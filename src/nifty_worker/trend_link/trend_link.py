@@ -4,10 +4,10 @@ from uuid import uuid1
 
 from nifty_common import helpers
 from nifty_common.types import Channel, TrendEvent, TrendLinkEvent, UpstreamSource
-from nifty_worker.common.async_worker import AsyncNiftyWorker
+from nifty_worker.common.asyncio.worker import NiftyWorker
 
 
-class TrendLinkWorker(AsyncNiftyWorker[TrendEvent]):
+class TrendLinkWorker(NiftyWorker[TrendEvent]):
 
     def __init__(self):
         super().__init__()

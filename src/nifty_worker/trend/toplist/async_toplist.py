@@ -8,7 +8,8 @@ from typing import Any, Awaitable, Callable, Generic, List, Optional, ParamSpec,
 
 from redis.asyncio.client import Redis
 
-from nifty_common.helpers import async_retry, noneint_throws
+from nifty_common.asyncio import helpers
+from nifty_common.helpers import noneint_throws
 from nifty_common.types import Key
 
 T = TypeVar('T')
@@ -65,7 +66,7 @@ class RedisTopList(AbstractTopList[T]):
         # SortedSet :[timestamp] { key: link_id, score: -hits }
         self.bucket_set = root_key + ':bucket:set'
 
-    @async_retry(max_tries=3, stack_id=f"{__name__}:reap")
+    @helpers.retry(max_tries=3, stack_id=f"{__name__}:reap")
     async def __reap(self, ts_ms: int):
         while True:
             async with self.redis.pipeline() as pipe:
@@ -136,7 +137,7 @@ class RedisTopList(AbstractTopList[T]):
         await self.__reap(ts_ms)
 
     @__observe()
-    @async_retry(max_tries=3, stack_id=f"{__name__}:incr")
+    @helpers.retry(max_tries=3, stack_id=f"{__name__}:incr")
     async def incr(self, key: T, ts_ms: int):
         await self.__reap(ts_ms)
         ts_secs = int(ts_ms / 1000)

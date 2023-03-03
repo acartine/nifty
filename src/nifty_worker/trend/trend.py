@@ -5,7 +5,7 @@ from uuid import uuid1
 from nifty_common.helpers import none_throws, timestamp_ms
 from nifty_common.asyncio.redis_helpers import trending_size
 from nifty_common.types import Action, ActionType, Channel, Key, TrendEvent
-from nifty_worker.common.async_worker import AsyncNiftyWorker
+from nifty_worker.common.asyncio.worker import NiftyWorker
 from nifty_worker.trend.toplist.async_toplist import AbstractTopList, RedisTopList
 
 
@@ -17,7 +17,7 @@ from nifty_worker.trend.toplist.async_toplist import AbstractTopList, RedisTopLi
 # they will overwrite each other but we don't need it to be exact
 
 
-class TrendWorker(AsyncNiftyWorker[Action]):
+class TrendWorker(NiftyWorker[Action]):
 
     def __init__(self, *,
                  trend_size: int,
