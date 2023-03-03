@@ -1,0 +1,9 @@
+{
+  "site_package_search_strategy": "pep561",
+  "source_directories": [
+    "src"
+  ],
+  "search_path": [
+	"/home/acartine/.local/share/virtualenvs/nifty-D6-AHl3j/lib/python3.10/site-packages*"
+  ]
+}

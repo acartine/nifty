@@ -5,12 +5,12 @@ from typing import Callable, List, Optional, Tuple, TypeVar
 from psycopg import Cursor
 from psycopg.rows import BaseRowFactory, class_row
 from psycopg_pool import ConnectionPool
-from pydantic import BaseModel
 
 from nifty_common import cfg
 from nifty_common.helpers import retry
 from nifty_common.redis_helpers import get_redis, rint, robj, trending_size
 from nifty_common.types import Key, Link, RedisType
+from .types import Id, Trending, TrendingItem, Url
 
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')
@@ -25,31 +25,6 @@ cache = get_redis(RedisType.CACHE)
 @atexit.register
 def close():
     _pool.close()
-
-
-class TrendingItem(BaseModel):
-    id: int
-    created_at: int
-    long_url: str
-    short_url: str
-    views: int
-
-
-class Trending(BaseModel):
-    list: List[TrendingItem]
-
-
-class Id(BaseModel):
-    id: int | None = None
-
-
-class Url(BaseModel):
-    url: str | None = None
-
-
-class UrlRow(BaseModel):
-    id: int
-    url: str
 
 
 def _execute(sql: str,

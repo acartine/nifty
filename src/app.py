@@ -6,7 +6,8 @@ from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
 
 from nifty.base62 import base62_encode
-from nifty.store import Link, get_long_url, get_short_url, get_trending, redis_client, upsert_link, upsert_long_url
+from nifty.store import store
+from nifty_common.types import Link
 from nifty_common.helpers import timestamp_ms
 from nifty_common.log import log_init
 from nifty_common.types import Action, ActionType, Channel
@@ -55,22 +56,23 @@ def shorten(body: ShortenRequest):
     long_url = body.long_url
 
     # Check if the long URL has already been shortened
-    short_url = get_short_url(long_url)
+    short_url = store.get_short_url(long_url)
     if short_url:
         logger.debug(f"found {short_url}")
         # Return the existing short URL if it has been shortened before
         return jsonify({'short_url': short_url})
 
     # Upsert the long url
-    long_url_id = upsert_long_url(long_url)
+    long_url_id = store.upsert_long_url(long_url)
     short_url = base62_encode(long_url_id)
     logger.debug(f"generated {short_url}")
 
     # Save the long URL and short URL in the database
-    link = upsert_link(long_url_id, short_url)
+    link = store.upsert_link(long_url_id, short_url)
 
     # TODO maybe do this async after returning the response
-    redis_client.publish(Channel.action,
+    # this is also kinda shady
+    store.redis_client.publish(Channel.action,
                          Action(
                              uuid=str(uuid1()),
                              type=ActionType.create,
@@ -84,17 +86,19 @@ def shorten(body: ShortenRequest):
 
 @app.route('/nifty/trending', methods={'GET'})
 def trending():
-    return get_trending().json(), 200
+    return store.get_trending().json(), 200
 
 
 @app.route('/<short_url>', methods=['GET'])
 def lookup(short_url):
     # Look up the long URL for the given short URL
-    link: Link | None = get_long_url(short_url)
+    link: Link | None = store.get_long_url(short_url)
 
     # Redirect to the long URL if it exists
     if link:
-        redis_client.publish(Channel.action,
+        # TODO maybe move publish into store
+        # then we don't have to expose redis client
+        store.redis_client.publish(Channel.action,
                              Action(
                                  uuid=str(uuid1()),
                                  type=ActionType.get,
