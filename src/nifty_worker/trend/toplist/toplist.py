@@ -8,10 +8,10 @@ from typing import Any, Callable, Generic, List, Optional, ParamSpec, Set, TypeV
 
 from redis.client import Redis
 
-from nifty_common.constants import REDIS_TRENDING_SIZE_KEY
 from nifty_common.helpers import noneint_throws, retry
+from nifty_common.types import Key
 
-T = TypeVar('T')
+T = TypeVar('T', bound=str | int)
 Param = ParamSpec("Param")
 RetType = TypeVar("RetType")
 OriginalFunc = Callable[Param, RetType]
@@ -29,9 +29,9 @@ class AbstractTopList(Generic[T], abc.ABC):
 
     def __init__(self,
                  max_age: int,
-                 bucket_len_sec: Optional[int] = 1):
+                 bucket_len_sec: Optional[int] = None ):
         self.max_age = max_age
-        self.bucket_len_sec = bucket_len_sec
+        self.bucket_len_sec = bucket_len_sec if bucket_len_sec else 1
 
     @abstractmethod
     def incr(self, key: T, ts_ms: int):
@@ -104,8 +104,8 @@ class RedisTopList(AbstractTopList[T]):
         return f"{self.bucket_set}:{name}"
 
     def __get(self) -> List[Entry[T]]:
-        size = noneint_throws(self.redis.get(REDIS_TRENDING_SIZE_KEY),
-                              REDIS_TRENDING_SIZE_KEY)
+        size = noneint_throws(self.redis.get(Key.trending_size),
+                              Key.trending_size.value)
         foo = self.redis.zrange(self.toplist_set,
                                 start=0,
                                 end=size,
@@ -118,7 +118,7 @@ class RedisTopList(AbstractTopList[T]):
     def _observe() -> OriginalFunc:
         def decorator(func: OriginalFunc) -> OriginalFunc:
             @functools.wraps(func)
-            def wrapper(self, *args, **kwargs) -> RetType:
+            def wrapper(self, *args, **kwargs):
                 ret = func(self, *args, **kwargs)
                 newcache = {item.key for item in self.__get()}
                 added = newcache - self.cache
@@ -165,7 +165,11 @@ class RedisTopList(AbstractTopList[T]):
                                            bucket_key) / self.bucket_len_sec)
                 key_at_index = cast(Optional[bytes], pipe.lindex(self.buckets_list,
                                                                  expected_list_index))
-                if not key_at_index or int(key_at_index) != bucket_key:
+                if not key_at_index:
+                    _logger.warning(f"can't increment key '{key}', expected "
+                                    f"'{bucket_key}' but none found")
+                    return
+                elif int(key_at_index) != bucket_key:
                     _logger.warning(f"can't increment key '{key}', expected "
                                     f"'{bucket_key}' but found {int(key_at_index)}")
                     return

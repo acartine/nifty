@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional, Set
+from typing import Any, Dict, Optional, Set
 from uuid import uuid1
 
 from nifty_common.helpers import none_throws, timestamp_ms
@@ -65,13 +65,13 @@ class TrendWorker(NiftyWorker[Action]):
             ctor=int,
             bucket_len_sec=self.toplist_bucket_len_sec)
 
-    def unpack(self, msg: Dict[str, any]) -> Action:
+    def unpack(self, msg: Dict[str, Any]) -> Action:
         return Action.parse_raw(msg['data'])
 
     def filter(self, msg: Action) -> bool:
         return msg.type == ActionType.get
 
-    async def on_event(self, channel: Channel, msg: Action):
+    async def on_event(self, _channel: Channel, msg: Action):
        await (self.toplist().incr(msg.link_id, min(msg.at, timestamp_ms())))
 
     async def on_yield(self):

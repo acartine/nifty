@@ -15,8 +15,8 @@ from .types import Id, Trending, TrendingItem, Url
 _logger = logging.getLogger(__name__)
 T = TypeVar('T')
 R = TypeVar('R')
-_conninfo = f"postgresql://{cfg.get('postgres', 'user')}:{cfg.get('postgres', 'pwd')}" \
-            f"@{cfg.get('postgres', 'host')}/postgres"
+_conninfo = f"postgresql://{cfg.g('postgres', 'user')}:{cfg.g('postgres', 'pwd')}" \
+            f"@{cfg.g('postgres', 'host')}/postgres"
 _pool = ConnectionPool(conninfo=_conninfo)
 redis_client = get_redis(RedisType.STD)
 cache = get_redis(RedisType.CACHE)

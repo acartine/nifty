@@ -6,7 +6,7 @@ from nifty_common.asyncio import helpers
 
 
 @helpers.retry(max_tries=3, stack_id=__name__)
-async def claim(redis: Redis, key: str | int, lifetime_sec: int) -> bool:
+async def claim(redis: Redis, key: str, lifetime_sec: int) -> bool:
     async with redis.pipeline() as pipe:
         await pipe.watch(key)
         pipe.multi()

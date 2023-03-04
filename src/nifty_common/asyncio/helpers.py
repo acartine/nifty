@@ -8,16 +8,18 @@ RetType = TypeVar("RetType")
 OriginalFunc = Callable[Param, RetType]
 AsyncOriginalFunc = Callable[Param, Awaitable[RetType]]
 
+# doesn't seem like python or pyright has this figured out yet
+# but this is working so we'll come back to this
 
 def retry(max_tries: int,
-                stack_id: Optional[str] = __name__,
-                first_delay: Optional[float] = .1) -> Callable[[AsyncOriginalFunc], AsyncOriginalFunc]:
+                stack_id: Optional[str] = None,
+                first_delay: Optional[float] = None) -> Callable[[AsyncOriginalFunc], AsyncOriginalFunc]:
     def decorator(func: AsyncOriginalFunc) -> AsyncOriginalFunc:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             for attempt in range(max_tries):
                 # linear for now, keep it simple
-                delay = attempt * first_delay
+                delay = attempt * (first_delay if first_delay else .1)
                 if delay > 0:
                     await asyncio.sleep(delay)
                 try:

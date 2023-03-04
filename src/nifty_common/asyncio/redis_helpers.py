@@ -13,10 +13,10 @@ TBaseModel = TypeVar('TBaseModel', bound=BaseModel)
 
 def get_redis(redis_type: RedisType) -> Redis:
     print(redis_type.cfg_key)
-    return Redis(host=cfg.get(redis_type.cfg_key, 'host'),
-                 username=cfg.get(redis_type.cfg_key, 'user'),
-                 password=cfg.get(redis_type.cfg_key, 'pwd'),
-                 port=cfg.getint(redis_type.cfg_key, 'port', 6379),
+    return Redis(host=cfg.g(redis_type.cfg_key, 'host'),
+                 username=cfg.g(redis_type.cfg_key, 'user'),
+                 password=cfg.g(redis_type.cfg_key, 'pwd'),
+                 port=cfg.gint_fb(redis_type.cfg_key, 'port', 6379),
                  decode_responses=True)
 
 
@@ -26,7 +26,7 @@ async def rint(redis: Redis, key: str, throws: Optional[bool] = True) -> Optiona
 
 
 async def robj(redis: Redis,
-               key: str | int,
+               key: str,
                cl: Type[TBaseModel],
                throws: Optional[bool] = True) -> Optional[TBaseModel]:
     # noinspection PyUnresolvedReferences

@@ -39,38 +39,42 @@ for s in cfg.sections():
 
 T = TypeVar("T")
 
+def g(section: str,
+        key: str) -> str:
+        """
+        simple get, fail fast
+        """
 
-def get(section: str,
+        return cfg[section][key]
+
+def g_opt(
+        section: str,
+        key: str) -> Optional[str]:
+        """
+        simple get, return None if not found
+        """
+
+        return cfg[section].get(key)
+
+def g_fb(section: str,
         key: str,
-        fallback: Optional[T] = None,
-        *,
-        ctor: Callable[[str], T] = str) -> T:
-    """
-    Get optionally or return default
-
-    :param section:
-    :param key:
-    :param fallback: if no value is present
-    :param ctor: how to convert the value to desired type
-    :return: config value in desired type, or None no value was resolved
-    """
-    if fallback is None:
-        return ctor(cfg[section][key])
-
-    val = cfg[section].get(key)
-    if val:
-        return ctor(val)
-
-    return fallback
+        fallback: str) -> str:
+        """
+        get with fallback
+        """
+   
+        val = g_opt(section, key)
+        return val if val else fallback
 
 
-def getint(section: str, key: str, fallback: Optional[int]) -> int:
+def gint(section: str, key: str) -> int:
     """
     Fail fast int getter
 
-    :param section:
-    :param key:
-    :param fallback
-    :return: config value as int
+
     """
-    return get(section, key, fallback, ctor=int)
+    return int(g(section, key))
+
+def gint_fb(section: str, key: str, fallback: int) -> int:
+    val = g_opt(section, key)
+    return int(val) if val else fallback
