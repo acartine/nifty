@@ -77,9 +77,7 @@ def shorten(body: ShortenRequest):
                              uuid=str(uuid1()),
                              type=ActionType.create,
                              at=timestamp_ms(),
-                             link_id=link.id,
-                             short_url=link.short_url,
-                             long_url=link.long_url).json())
+                             link_id=link.id).json())
 
     return jsonify({'short_url': short_url}), 201
 

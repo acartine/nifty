@@ -28,10 +28,14 @@ def get_redis_async(redis_type: RedisType) -> AsyncRedis:
                       decode_responses=True)
 
 
-def rint(redis: Redis, key: str, throws: Optional[bool] = True) -> Optional[int]:
+def rint_throws(redis: Redis, key: str) -> int:
     raw = redis.get(key)
-    return noneint_throws(raw, key) if throws else optint_or_none(raw)
+    return noneint_throws(raw, key)
 
+
+def rint(redis: Redis, key: str) -> Optional[int]:
+    raw = redis.get(key)
+    return int(raw) if raw is not None else None
 
 def robj(redis: Redis,
          key: str | int,
@@ -45,5 +49,5 @@ def robj(redis: Redis,
     return cl.parse_obj(raw) if raw is not None else None
 
 
-def trending_size(redis: Redis, throws: Optional[bool] = True) -> Optional[int]:
+def trending_size(redis: Redis, throws: Optional[bool] = True) -> int:
     return rint(redis, Key.trending_size, throws)
