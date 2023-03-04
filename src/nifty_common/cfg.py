@@ -15,7 +15,7 @@ CFG_FILE_PATH = 'config'
 cfg = configparser.ConfigParser(interpolation=_EnvInterpolation())
 
 
-def load_config(l_cfg: configparser.ConfigParser, prefix: str = None):
+def load_config(l_cfg: configparser.ConfigParser, prefix: Optional[str] = None):
     cfg_file = f"{prefix}_config.ini" if prefix else 'config.ini'
     cfg_file = f"{CFG_FILE_PATH}/{cfg_file}"
     print(f"Loading from '{cfg_file}'...")
@@ -44,26 +44,7 @@ def get(section: str,
         key: str,
         fallback: Optional[T] = None,
         *,
-        ctor: Optional[Callable[[str], T]] = None) -> T:
-    """
-    Fail fast getter
-
-    :param section:
-    :param key
-    :param fallback: if no value is present
-    :param ctor: how to convert the value to desired type
-    :return: configuration value for key in desired type
-    """
-    val = cfg[section][key] if fallback is None else cfg[section].get(key, fallback)
-
-    return ctor(val) if ctor is not None else val
-
-
-def get_opt(section: str,
-            key: str,
-            fallback: Optional[T] = None,
-            *,
-            ctor: Optional[Callable[[str], T]] = None) -> Optional[T]:
+        ctor: Callable[[str], T] = str) -> T:
     """
     Get optionally or return default
 
@@ -73,19 +54,23 @@ def get_opt(section: str,
     :param ctor: how to convert the value to desired type
     :return: config value in desired type, or None no value was resolved
     """
-    val = cfg[section].get(key, fallback)
-    if val is None or ctor is None:
-        return val
-    return ctor(val)
+    if fallback is None:
+        return ctor(cfg[section][key])
+
+    val = cfg[section].get(key)
+    if val:
+        return ctor(val)
+
+    return fallback
 
 
-def getint(section: str, key: str, fallback: Optional[int] = None) -> int:
+def getint(section: str, key: str, fallback: Optional[int]) -> int:
     """
     Fail fast int getter
 
     :param section:
     :param key:
-    :param fallback: if no value is present
+    :param fallback
     :return: config value as int
     """
     return get(section, key, fallback, ctor=int)

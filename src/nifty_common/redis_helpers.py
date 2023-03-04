@@ -6,7 +6,7 @@ from redis.asyncio.client import Redis as AsyncRedis
 from redis.client import Redis
 
 from nifty_common import cfg
-from nifty_common.helpers import none_throws, noneint_throws, optint_or_none
+from nifty_common.helpers import none_throws, noneint_throws
 from nifty_common.types import Key, RedisType
 
 TBaseModel = TypeVar('TBaseModel', bound=BaseModel)
@@ -29,7 +29,7 @@ def get_redis_async(redis_type: RedisType) -> AsyncRedis:
 
 
 def rint_throws(redis: Redis, key: str) -> int:
-    raw = redis.get(key)
+    raw =  redis.get(key)
     return noneint_throws(raw, key)
 
 
@@ -38,7 +38,7 @@ def rint(redis: Redis, key: str) -> Optional[int]:
     return int(raw) if raw is not None else None
 
 def robj(redis: Redis,
-         key: str | int,
+         key: str,
          cl: Type[TBaseModel],
          throws: Optional[bool] = True) -> Optional[TBaseModel]:
     raw = redis.hgetall(key)
@@ -49,5 +49,5 @@ def robj(redis: Redis,
     return cl.parse_obj(raw) if raw is not None else None
 
 
-def trending_size(redis: Redis, throws: Optional[bool] = True) -> int:
-    return rint(redis, Key.trending_size, throws)
+def trending_size(redis: Redis) -> Optional[int]:
+    return rint_throws(redis, Key.trending_size)

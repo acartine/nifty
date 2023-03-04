@@ -34,13 +34,13 @@ def _execute(sql: str,
     _logger.debug(args)
     with _pool.connection() as conn:
         with conn.cursor(row_factory=row_factory) as cur:
-            cur.execute(sql, args)
+            cur.execute(sql, args) #type: ignore
             return processor(cur)
 
 
 def _ex_one(sql: str,
             args: Tuple,
-            row_factory: BaseRowFactory[T]) -> T:
+            row_factory: BaseRowFactory[T]) -> Optional[T]:
     return _execute(sql, args, row_factory, lambda cur: cur.fetchone())
 
 
@@ -82,7 +82,7 @@ _upsert_long_url_sql = """
 
 def upsert_long_url(long_url: str) -> int:
     ret = _ex_one(_upsert_long_url_sql, (long_url, long_url), class_row(Id))
-    if not ret:
+    if not ret or not ret.id:
         raise Exception("Unable to get or create long url from ${long_url}")
 
     return ret.id
@@ -122,8 +122,9 @@ def _cache_upsert_link(link: Link):
     with cache.pipeline() as p:
         p.watch(link_key, link_id_key, long_url_key)
         p.multi()
-        p.hset(link_key, mapping=link.redis_dict()) \
-            .set(link_id_key, link.id) \
+        
+        p.hset(link_key, mapping=link.redis_dict()) # type: ignore
+        p.set(link_id_key, link.id) \
             .set(long_url_key, link.long_url) \
             .execute()
 
@@ -134,8 +135,7 @@ def _get_link_from_cache(short_url: str) -> Optional[Link]:
     # TODO make a lua script and execute both on server side
     # we want to do this atomically, but for now let's get this working
     link_id = rint(cache,
-                   link_id_key,
-                   throws=False)
+                   link_id_key)
     if link_id is not None:
         link_key = Key.link_by_link_id.sub(link_id)
         link = robj(cache, link_key, Link, throws=False)
@@ -214,15 +214,15 @@ def get_links_by_id(ids: List[int]) -> List[Link]:
 
 
 def get_trending() -> Trending:
-    tr_sz = trending_size(redis_client, throws=False)
+    tr_sz = trending_size(redis_client)
     if tr_sz is None:
         return Trending(list=[])
 
     results: List[Tuple[int, int]] = \
-        redis_client.zrange(Key.trending,
-                            0, trending_size(redis_client),
+        [(key, int(score)) for key, score in redis_client.zrange(Key.trending,
+                            0, tr_sz,
                             desc=True,
-                            withscores=True)
+                            withscores=True)]
     _logger.debug(results)
     items: List[TrendingItem] = []
     if results and len(results) > 0:
