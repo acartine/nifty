@@ -19,12 +19,11 @@ RetType = TypeVar("RetType")
 OriginalFunc = Callable[Param, RetType]
 
 
-def retry(max_tries: int,
-          stack_id: str = __name__,
-          first_delay: float = .1):
+def retry(max_tries: int, stack_id: str = __name__, first_delay: float = 0.1):
     """
     Create callable decorator to retry a function
     """
+
     def decorator(func: OriginalFunc) -> OriginalFunc:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -38,7 +37,9 @@ def retry(max_tries: int,
                 except Exception as e:
                     logging.getLogger(stack_id).debug(e)
                     if attempt >= max_tries - 1:
-                        logging.getLogger(stack_id).error(f"Exception limit '{max_tries}' exceeded")
+                        logging.getLogger(stack_id).error(
+                            f"Exception limit '{max_tries}' exceeded"
+                        )
                         raise e
 
         return wrapper
@@ -46,13 +47,19 @@ def retry(max_tries: int,
     return decorator
 
 
-T = TypeVar('T')
+T = TypeVar("T")
+
+
 def opt_or(optional: Optional[T], fallback: T) -> T:
     return optional if optional is not None else fallback
 
-T_Intable = TypeVar('T_Intable', bound=str | float | bytes, covariant=True)
+
+T_Intable = TypeVar("T_Intable", bound=str | float | bytes, covariant=True)
+
+
 def optint_or_none(optional: Optional[T_Intable]) -> Optional[int]:
     return int(optional) if optional is not None else None
+
 
 def none_throws(optional: Optional[T], msg: str) -> T:
     if optional is None:

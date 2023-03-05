@@ -11,15 +11,18 @@ AsyncOriginalFunc = Callable[Param, Awaitable[RetType]]
 # doesn't seem like python or pyright has this figured out yet
 # but this is working so we'll come back to this
 
-def retry(max_tries: int,
-                stack_id: Optional[str] = __name__,
-                first_delay: Optional[float] = .1) -> Callable[[AsyncOriginalFunc], AsyncOriginalFunc]:
+
+def retry(
+    max_tries: int,
+    stack_id: Optional[str] = __name__,
+    first_delay: Optional[float] = 0.1,
+) -> Callable[[AsyncOriginalFunc], AsyncOriginalFunc]:
     if stack_id is None:
-        raise Exception('stack_id cannot be None')
+        raise Exception("stack_id cannot be None")
 
     if first_delay is None or first_delay <= 0:
-        raise Exception('first_delay must be > 0')
-        
+        raise Exception("first_delay must be > 0")
+
     def decorator(func: AsyncOriginalFunc) -> AsyncOriginalFunc:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
@@ -33,7 +36,9 @@ def retry(max_tries: int,
                 except Exception as e:
                     logging.getLogger(stack_id).debug(e)
                     if attempt >= max_tries - 1:
-                        logging.getLogger(stack_id).error(f"Exception limit '{max_tries}' exceeded")
+                        logging.getLogger(stack_id).error(
+                            f"Exception limit '{max_tries}' exceeded"
+                        )
                         raise e
 
         return wrapper

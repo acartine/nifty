@@ -9,7 +9,6 @@ from nifty_worker.common.asyncio.worker import NiftyWorker
 
 
 class ImageBuilderWorker(NiftyWorker[TrendLinkEvent]):
-
     def __init__(self):
         super().__init__()
 
@@ -48,7 +47,8 @@ class ImageBuilderWorker(NiftyWorker[TrendLinkEvent]):
         #                  upstream=[upstream] + msg.upstream)
         # await r.publish(Channel.trend_link, evt.json())  # noqa/
 
-    async def on_yield(self): ...
+    async def on_yield(self):
+        ...
 
     def unpack(self, msg: Dict[str, Any]) -> TrendLinkEvent:
-        return TrendLinkEvent.parse_raw(msg['data'])
+        return TrendLinkEvent.parse_raw(msg["data"])

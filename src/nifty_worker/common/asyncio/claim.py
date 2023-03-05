@@ -10,6 +10,6 @@ async def claim(redis: Redis, key: str, lifetime_sec: int) -> bool:
     async with redis.pipeline() as pipe:
         await pipe.watch(key)
         pipe.multi()
-        res = await (pipe.incr(key).expire(key, lifetime_sec, nx=True).execute())
+        res = await pipe.incr(key).expire(key, lifetime_sec, nx=True).execute()
         logging.getLogger(__name__).debug(res)
         return int(res[0]) == 1

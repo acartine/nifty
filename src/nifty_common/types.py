@@ -8,7 +8,7 @@ from nifty_common.helpers import timestamp_ms
 
 
 class RedisType(Enum):
-    STD = "redis",
+    STD = ("redis",)
     CACHE = "redis-cache"
 
     def __init__(self, cfg_key: str):
@@ -16,20 +16,21 @@ class RedisType(Enum):
 
 
 class Key(str, Enum):
-    link_id_cache = 'nifty:linkid:byshorturl'
-    link_by_link_id = 'nifty:link:bylinkid'
-    long_by_short = 'nifty:longurl:byshorturl'
-    trending = 'nifty:trending'
-    trending_size = 'nifty:trending:size'
+    link_id_cache = "nifty:linkid:byshorturl"
+    link_by_link_id = "nifty:link:bylinkid"
+    long_by_short = "nifty:longurl:byshorturl"
+    trending = "nifty:trending"
+    trending_size = "nifty:trending:size"
+
     def sub(self, *subscript: str | int) -> str:
         return f"{self.value}:{'.'.join([str(s) for s in subscript])}"
 
 
 class Channel(str, Enum):
-    action = 'nifty:action'
-    trend = 'nifty:trend'
-    trend_link = 'nifty:trend:link'
-    image_builder = 'nifty:trend:link:image'
+    action = "nifty:action"
+    trend = "nifty:trend"
+    trend_link = "nifty:trend:link"
+    image_builder = "nifty:trend:link:image"
 
 
 class Link(BaseModel):
@@ -44,13 +45,15 @@ class Link(BaseModel):
         return int(self.created_at.timestamp() * 1000)
 
     def redis_dict(self) -> Dict[str, int | str]:
-        return {**self.dict(exclude={'created_at'}),
-                'created_at': timestamp_ms(datetime_ts=self.created_at)}
+        return {
+            **self.dict(exclude={"created_at"}),
+            "created_at": timestamp_ms(datetime_ts=self.created_at),
+        }
 
 
 class ActionType(str, Enum):
-    get = 'get'
-    create = 'create'
+    get = "get"
+    create = "create"
 
 
 class Meta(BaseModel):

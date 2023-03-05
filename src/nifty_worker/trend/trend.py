@@ -18,11 +18,9 @@ from nifty_worker.trend.toplist.async_toplist import AbstractTopList, RedisTopLi
 
 
 class TrendWorker(NiftyWorker[Action]):
-
-    def __init__(self, *,
-                 trend_size: int,
-                 toplist_interval_sec: int,
-                 toplist_bucket_len_sec: int):
+    def __init__(
+        self, *, trend_size: int, toplist_interval_sec: int, toplist_bucket_len_sec: int
+    ):
         super().__init__()
         self._toplist: Optional[AbstractTopList[int]] = None
         self.trend_size = trend_size
@@ -31,8 +29,8 @@ class TrendWorker(NiftyWorker[Action]):
 
     def toplist(self) -> AbstractTopList[int]:
         return none_throws(
-            self._toplist,
-            "self._toplist is not set - did you start the worker?")
+            self._toplist, "self._toplist is not set - did you start the worker?"
+        )
 
     async def __set_size(self):
         newsize = self.trend_size
@@ -42,7 +40,7 @@ class TrendWorker(NiftyWorker[Action]):
             if newsize != cursize:
                 pipe.multi()
                 # noinspection PyUnresolvedReferences
-                await (pipe.set(Key.trending_size, newsize).execute())
+                await pipe.set(Key.trending_size, newsize).execute()
 
     async def before_start(self):
         await self.__set_size()
@@ -52,10 +50,9 @@ class TrendWorker(NiftyWorker[Action]):
             await self.redis().publish(
                 Channel.trend,
                 TrendEvent(
-                    uuid=str(uuid1()),
-                    at=timestamp_ms(),
-                    added=added,
-                    removed=removed).json())
+                    uuid=str(uuid1()), at=timestamp_ms(), added=added, removed=removed
+                ).json(),
+            )
 
         self._toplist = RedisTopList[int](
             Key.trending,
@@ -63,16 +60,17 @@ class TrendWorker(NiftyWorker[Action]):
             self.redis(),
             listener=on_toplist_change,
             ctor=int,
-            bucket_len_sec=self.toplist_bucket_len_sec)
+            bucket_len_sec=self.toplist_bucket_len_sec,
+        )
 
     def unpack(self, msg: Dict[str, Any]) -> Action:
-        return Action.parse_raw(msg['data'])
+        return Action.parse_raw(msg["data"])
 
     def filter(self, msg: Action) -> bool:
         return msg.type == ActionType.get
 
     async def on_event(self, _channel: Channel, msg: Action):
-       await (self.toplist().incr(msg.link_id, min(msg.at, timestamp_ms())))
+        await self.toplist().incr(msg.link_id, min(msg.at, timestamp_ms()))
 
     async def on_yield(self):
         now = timestamp_ms()

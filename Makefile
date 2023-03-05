@@ -84,12 +84,12 @@ stack-base-stop:
 test: stack-stop db-wipe stack-run db-apply-local
 	pushd ui && yarn cypress run ${ARGS}; \
 	e=$$?; \
-	popd; \
+	popd; \false
 	make stack-stop; \
 	exit $$e
 
-test-integration: py-type-check datastore-stop db-wipe datastore-run db-apply-local db-reapply-all-local
-	PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
+test-integration: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
+	PRIMARY_CFG=local PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
         e=$$?; \
 	make datastore-stop; \
         exit $$e
@@ -103,3 +103,7 @@ test-ui-dev:
 py-type-check:
 	pipenv run pyright
 
+py-lint-check:
+	pipenv run black src -t py310
+
+py-sanity: py-lint-check py-type-check test-integration

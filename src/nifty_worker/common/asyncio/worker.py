@@ -10,7 +10,6 @@ from nifty_worker.common.asyncio import claim
 from nifty_worker.common.worker import BaseNiftyWorker, T_Worker
 
 
-
 class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
     def __init__(self):
         super().__init__()
@@ -45,20 +44,25 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
         event = self.unpack(msg)
         if self.filter(event):
             logging.debug(event)
-            claimed = await claim.claim(self.redis(), f"{self.__class__}:{event.uuid}", 60)
+            claimed = await claim.claim(
+                self.redis(), f"{self.__class__}:{event.uuid}", 60
+            )
             if claimed:
                 await self.on_event(channel, event)
 
     async def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
         if listen_interval is None or listen_interval <= 0:
-            raise Exception('You must set listen_interval > 0')
+            raise Exception("You must set listen_interval > 0")
         await self.before_start()
-        redis = redis_helpers.get_redis(RedisType.STD)  # STD does not have LRU memory limit
+        redis = redis_helpers.get_redis(
+            RedisType.STD
+        )  # STD does not have LRU memory limit
         async with redis.pubsub(ignore_subscribe_messages=True) as pubsub:
             await pubsub.subscribe(src_channel)
             self.running = True
             while self.running:
                 msg = await pubsub.get_message(
                     ignore_subscribe_messages=True,
-                    timeout=listen_interval if listen_interval else 5)
+                    timeout=listen_interval if listen_interval else 5,
+                )
                 await self.__handle(src_channel, msg)

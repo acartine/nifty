@@ -8,16 +8,18 @@ from nifty_common import cfg
 from nifty_common.helpers import none_throws, noneint_throws, optint_or_none
 from nifty_common.types import Key, RedisType
 
-TBaseModel = TypeVar('TBaseModel', bound=BaseModel)
+TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
 
 
 def get_redis(redis_type: RedisType) -> Redis:
     print(redis_type.cfg_key)
-    return Redis(host=cfg.g(redis_type.cfg_key, 'host'),
-                 username=cfg.g(redis_type.cfg_key, 'user'),
-                 password=cfg.g(redis_type.cfg_key, 'pwd'),
-                 port=cfg.gint_fb(redis_type.cfg_key, 'port', 6379),
-                 decode_responses=True)
+    return Redis(
+        host=cfg.g(redis_type.cfg_key, "host"),
+        username=cfg.g(redis_type.cfg_key, "user"),
+        password=cfg.g(redis_type.cfg_key, "pwd"),
+        port=cfg.gint_fb(redis_type.cfg_key, "port", 6379),
+        decode_responses=True,
+    )
 
 
 async def rint(redis: Redis, key: str, throws: Optional[bool] = True) -> Optional[int]:
@@ -25,10 +27,9 @@ async def rint(redis: Redis, key: str, throws: Optional[bool] = True) -> Optiona
     return noneint_throws(raw, key) if throws else optint_or_none(raw)
 
 
-async def robj(redis: Redis,
-               key: str,
-               cl: Type[TBaseModel],
-               throws: Optional[bool] = True) -> Optional[TBaseModel]:
+async def robj(
+    redis: Redis, key: str, cl: Type[TBaseModel], throws: Optional[bool] = True
+) -> Optional[TBaseModel]:
     # noinspection PyUnresolvedReferences
     raw = await redis.hgetall(key)
     logging.debug(f"Raw HGETALL response: {raw}")

@@ -5,7 +5,7 @@ from nifty_common import cfg
 
 
 def log_init():
-    log_level = cfg.g_fb('logging', 'level', 'WARN')
+    log_level = cfg.g_fb("logging", "level", "WARN")
     log_level_val = getattr(logging, log_level.upper())
     print(f"Log level set to {log_level} {log_level_val}")
     root = logging.getLogger()
@@ -14,7 +14,8 @@ def log_init():
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(log_level_val)
     formatter = logging.Formatter(
-        '%(asctime)s %(levelname)-8s '
-        '[%(filename)s:%(lineno)d] %(funcName)s() => %(message)s')
+        "%(asctime)s %(levelname)-8s "
+        "[%(filename)s:%(lineno)d] %(funcName)s() => %(message)s"
+    )
     handler.setFormatter(formatter)
     root.addHandler(handler)

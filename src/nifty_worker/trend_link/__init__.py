@@ -10,9 +10,10 @@ TREND_LINK_CONFIG_KEY = "trend_link"
 
 log.log_init()
 worker = TrendLinkWorker()
-logging.debug('launching asyncio')
+logging.debug("launching asyncio")
 asyncio.run(
     worker.run(
         src_channel=Channel.trend,
-        listen_interval=cfg.gint(TREND_LINK_CONFIG_KEY,
-                                   'listen_interval_sec')))
+        listen_interval=cfg.gint(TREND_LINK_CONFIG_KEY, "listen_interval_sec"),
+    )
+)

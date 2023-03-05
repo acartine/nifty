@@ -13,10 +13,12 @@ from nifty_common.types import Key, Link, RedisType
 from .types import Id, Trending, TrendingItem, Url
 
 _logger = logging.getLogger(__name__)
-T = TypeVar('T')
-R = TypeVar('R')
-_conninfo = f"postgresql://{cfg.g('postgres', 'user')}:{cfg.g('postgres', 'pwd')}" \
-            f"@{cfg.g('postgres', 'host')}/postgres"
+T = TypeVar("T")
+R = TypeVar("R")
+_conninfo = (
+    f"postgresql://{cfg.g('postgres', 'user')}:{cfg.g('postgres', 'pwd')}"
+    f"@{cfg.g('postgres', 'host')}/postgres"
+)
 _pool = ConnectionPool(conninfo=_conninfo)
 redis_client = get_redis(RedisType.STD)
 cache = get_redis(RedisType.CACHE)
@@ -27,26 +29,24 @@ def close():
     _pool.close()
 
 
-def _execute(sql: str,
-             args: Tuple,
-             row_factory: BaseRowFactory[T],
-             processor: Callable[[Cursor[T]], R]) -> R:
+def _execute(
+    sql: str,
+    args: Tuple,
+    row_factory: BaseRowFactory[T],
+    processor: Callable[[Cursor[T]], R],
+) -> R:
     _logger.debug(args)
     with _pool.connection() as conn:
         with conn.cursor(row_factory=row_factory) as cur:
-            cur.execute(sql, args) #type: ignore
+            cur.execute(sql, args)  # type: ignore
             return processor(cur)
 
 
-def _ex_one(sql: str,
-            args: Tuple,
-            row_factory: BaseRowFactory[T]) -> Optional[T]:
+def _ex_one(sql: str, args: Tuple, row_factory: BaseRowFactory[T]) -> Optional[T]:
     return _execute(sql, args, row_factory, lambda cur: cur.fetchone())
 
 
-def _ex_all(sql: str,
-            args: Tuple,
-            row_factory: BaseRowFactory[T]) -> List[T]:
+def _ex_all(sql: str, args: Tuple, row_factory: BaseRowFactory[T]) -> List[T]:
     return _execute(sql, args, row_factory, lambda cur: cur.fetchall())
 
 
@@ -122,11 +122,9 @@ def _cache_upsert_link(link: Link):
     with cache.pipeline() as p:
         p.watch(link_key, link_id_key, long_url_key)
         p.multi()
-        
-        p.hset(link_key, mapping=link.redis_dict()) # type: ignore
-        p.set(link_id_key, link.id) \
-            .set(long_url_key, link.long_url) \
-            .execute()
+
+        p.hset(link_key, mapping=link.redis_dict())  # type: ignore
+        p.set(link_id_key, link.id).set(long_url_key, link.long_url).execute()
 
 
 def _get_link_from_cache(short_url: str) -> Optional[Link]:
@@ -134,8 +132,7 @@ def _get_link_from_cache(short_url: str) -> Optional[Link]:
 
     # TODO make a lua script and execute both on server side
     # we want to do this atomically, but for now let's get this working
-    link_id = rint(cache,
-                   link_id_key)
+    link_id = rint(cache, link_id_key)
     if link_id is not None:
         link_key = Key.link_by_link_id.sub(link_id)
         link = robj(cache, link_key, Link, throws=False)
@@ -155,8 +152,15 @@ def upsert_link(long_url_id: int, short_url: str) -> Link:
     if link is not None:
         return link
 
-    params = (short_url, long_url_id, short_url, long_url_id, short_url,
-              long_url_id, long_url_id)
+    params = (
+        short_url,
+        long_url_id,
+        short_url,
+        long_url_id,
+        short_url,
+        long_url_id,
+        long_url_id,
+    )
     ret = _ex_one(_link_sql, params, class_row(Link))
     if not ret:
         raise Exception("Unable to get or create long url from ${long_url}")
@@ -209,7 +213,7 @@ WHERE k.id IN (
 
 
 def get_links_by_id(ids: List[int]) -> List[Link]:
-    sql = links_by_ids_sql + ','.join(['%s'] * len(ids)) + ')'
+    sql = links_by_ids_sql + ",".join(["%s"] * len(ids)) + ")"
     return _ex_all(sql, tuple(ids), class_row(Link))
 
 
@@ -218,21 +222,24 @@ def get_trending() -> Trending:
     if tr_sz is None:
         return Trending(list=[])
 
-    results: List[Tuple[int, int]] = \
-        [(key, int(score)) for key, score in redis_client.zrange(Key.trending,
-                            0, tr_sz,
-                            desc=True,
-                            withscores=True)]
+    results: List[Tuple[int, int]] = [
+        (key, int(score))
+        for key, score in redis_client.zrange(
+            Key.trending, 0, tr_sz, desc=True, withscores=True
+        )
+    ]
     _logger.debug(results)
     items: List[TrendingItem] = []
     if results and len(results) > 0:
         links: List[Link] = get_links_by_id([int(t[0]) for t in results])
         for i in range(len(results)):
             items.append(
-                TrendingItem(id=results[i][0],
-                             created_at=links[i].created_at_ms(),
-                             long_url=links[i].long_url,
-                             short_url=links[i].short_url,
-                             views=int(results[i][1])
-                             ))
+                TrendingItem(
+                    id=results[i][0],
+                    created_at=links[i].created_at_ms(),
+                    long_url=links[i].long_url,
+                    short_url=links[i].short_url,
+                    views=int(results[i][1]),
+                )
+            )
     return Trending(list=items)

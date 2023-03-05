@@ -8,7 +8,7 @@ from nifty_common.redis_helpers import get_redis
 from nifty_common.types import Channel, Meta, RedisType
 from .claim import claim
 
-T_Worker = TypeVar('T_Worker', bound=Meta)
+T_Worker = TypeVar("T_Worker", bound=Meta)
 
 
 class BaseNiftyWorker(Generic[T_Worker], ABC):
@@ -66,18 +66,21 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
 
     def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
         if listen_interval is None or listen_interval <= 0:
-            raise Exception('You must set listen_interval > 0')
+            raise Exception("You must set listen_interval > 0")
         self.before_start()
-        redis = get_redis(RedisType.STD)  # docs say to use diff reais for read, not sure this is true
+        redis = get_redis(
+            RedisType.STD
+        )  # docs say to use diff reais for read, not sure this is true
         pubsub = redis.pubsub(ignore_subscribe_messages=True)
         pubsub.subscribe(src_channel)
         self.running = True
         while self.running:
             self.__handle(
                 src_channel,
-
                 # redis uses 'dict' instead of 'Dict' which is causing this error
                 # suppressing pyright means we can avoid deprecated types in our api
                 pubsub.get_message(
                     ignore_subscribe_messages=True,
-                    timeout=listen_interval if listen_interval else 5)) # pyright: reportGeneralTypeIssues=false
+                    timeout=listen_interval if listen_interval else 5,
+                ),
+            )  # pyright: reportGeneralTypeIssues=false
