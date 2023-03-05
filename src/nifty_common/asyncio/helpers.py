@@ -12,14 +12,20 @@ AsyncOriginalFunc = Callable[Param, Awaitable[RetType]]
 # but this is working so we'll come back to this
 
 def retry(max_tries: int,
-                stack_id: Optional[str] = None,
-                first_delay: Optional[float] = None) -> Callable[[AsyncOriginalFunc], AsyncOriginalFunc]:
+                stack_id: Optional[str] = __name__,
+                first_delay: Optional[float] = .1) -> Callable[[AsyncOriginalFunc], AsyncOriginalFunc]:
+    if stack_id is None:
+        raise Exception('stack_id cannot be None')
+
+    if first_delay is None or first_delay <= 0:
+        raise Exception('first_delay must be > 0')
+        
     def decorator(func: AsyncOriginalFunc) -> AsyncOriginalFunc:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             for attempt in range(max_tries):
                 # linear for now, keep it simple
-                delay = attempt * (first_delay if first_delay else .1)
+                delay = attempt * first_delay
                 if delay > 0:
                     await asyncio.sleep(delay)
                 try:

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from typing import Any, Dict
 from uuid import uuid1
 
 from nifty_common import helpers
@@ -26,5 +26,5 @@ class TrendLinkWorker(NiftyWorker[TrendEvent]):
 
     async def on_yield(self): ...
 
-    def unpack(self, msg: Dict[str, any]) -> TrendEvent:
+    def unpack(self, msg: Dict[str, Any]) -> TrendEvent:
         return TrendEvent.parse_raw(msg['data'])

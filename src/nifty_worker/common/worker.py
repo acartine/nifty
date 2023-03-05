@@ -64,7 +64,9 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
             if claim(self.redis(), f"{self.__class__}:{event.uuid}", 60):
                 self.on_event(channel, event)
 
-    def run(self, *, src_channel: Channel, listen_interval: Optional[int]):
+    def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
+        if listen_interval is None or listen_interval <= 0:
+            raise Exception('You must set listen_interval > 0')
         self.before_start()
         redis = get_redis(RedisType.STD)  # docs say to use diff reais for read, not sure this is true
         pubsub = redis.pubsub(ignore_subscribe_messages=True)

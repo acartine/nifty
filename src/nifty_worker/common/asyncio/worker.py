@@ -49,7 +49,9 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
             if claimed:
                 await self.on_event(channel, event)
 
-    async def run(self, *, src_channel: Channel, listen_interval: Optional[int] = None):
+    async def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
+        if listen_interval is None or listen_interval <= 0:
+            raise Exception('You must set listen_interval > 0')
         await self.before_start()
         redis = redis_helpers.get_redis(RedisType.STD)  # STD does not have LRU memory limit
         async with redis.pubsub(ignore_subscribe_messages=True) as pubsub:
