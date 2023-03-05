@@ -12,7 +12,7 @@ from nifty_common.asyncio import helpers
 from nifty_common.helpers import noneint_throws
 from nifty_common.types import Key
 
-T = TypeVar('T')
+T = TypeVar('T', bound=str | int)
 Param = ParamSpec("Param")
 RetType = TypeVar("RetType")
 OriginalFunc = Callable[Param, Awaitable[RetType]]
@@ -29,6 +29,8 @@ class AbstractTopList(Generic[T], abc.ABC):
     def __init__(self,
                  max_age: int,
                  bucket_len_sec: Optional[int] = 1):
+        if bucket_len_sec is None:
+            raise Exception('bucket_len_sec must be > 0')
         self.max_age = max_age
         self.bucket_len_sec = bucket_len_sec
 
@@ -118,7 +120,7 @@ class RedisTopList(AbstractTopList[T]):
     def __observe() -> Callable[[OriginalFunc], OriginalFunc]:
         def decorator(func: OriginalFunc) -> OriginalFunc:
             @functools.wraps(func)
-            async def wrapper(self, *args, **kwargs) -> Awaitable[RetType]:
+            async def wrapper(self, *args, **kwargs):
                 ret = await func(self, *args, **kwargs)
                 newcache = {item.key for item in await self.__get()}
                 added = newcache - self.cache
@@ -166,7 +168,11 @@ class RedisTopList(AbstractTopList[T]):
                 kai_raw = await pipe.lindex(self.buckets_list,
                                             expected_list_index)
                 key_at_index = cast(Optional[bytes], kai_raw)
-                if not key_at_index or int(key_at_index) != bucket_key:
+                if not key_at_index:
+                    logging.warning(f"can't increment key '{key}', expected "
+                                    f"'{bucket_key}' but none found")
+                    return
+                elif int(key_at_index) != bucket_key:
                     logging.warning(f"can't increment key '{key}', expected "
                                     f"'{bucket_key}' but found {int(key_at_index)}")
                     return

@@ -75,7 +75,6 @@ stack-run: docker-build trend-docker-build trend-link-docker-build
 stack-stop:
 	docker compose --profile all down
 
-
 stack-base-run: docker-build
 	docker compose --profile base up --wait -d
 
@@ -89,7 +88,7 @@ test: stack-stop db-wipe stack-run db-apply-local
 	make stack-stop; \
 	exit $$e
 
-test-integration: datastore-stop db-wipe datastore-run db-apply-local db-reapply-all-local
+test-integration: py-type-check datastore-stop db-wipe datastore-run db-apply-local db-reapply-all-local
 	PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
         e=$$?; \
 	make datastore-stop; \
@@ -100,4 +99,7 @@ test-unit: py-clean
 
 test-ui-dev:
 	pushd ui && yarn run cypress open --env host='localhost:3000'
+
+py-type-check:
+	pipenv run pyright
 
