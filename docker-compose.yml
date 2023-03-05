@@ -61,8 +61,8 @@ services:
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - REDIS_HOST=redis
-      - REDIS_PWD=${REDIS_PWD}
-      - REDIS_USER=${REDIS_USER}
+      - TREND_REDIS_PWD=${TREND_REDIS_PWD}
+      - TREND_REDIS_USER=${TREND_REDIS_USER}
     depends_on:
       redis:
         condition: service_healthy
@@ -80,8 +80,8 @@ services:
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - REDIS_HOST=redis
-      - REDIS_PWD=${REDIS_PWD}
-      - REDIS_USER=${REDIS_USER}
+      - TREND_LINK_REDIS_PWD=${TREND_LINK_REDIS_PWD}
+      - TREND_LINK_REDIS_USER=${TREND_LINK_REDIS_USER}
     depends_on:
       redis:
         condition: service_healthy
@@ -101,15 +101,14 @@ services:
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - PG_HOST=postgres
-      - PG_PWD=${PG_PWD}
-      - PG_USER=${PG_USER}
       - REDIS_HOST=redis
-      - REDIS_PWD=${REDIS_PWD}
-      - REDIS_USER=${REDIS_USER}
       - REDIS_CACHE_HOST=redis-cache
-      - REDIS_CACHE_PWD=${REDIS_CACHE_PWD}
-      - REDIS_CACHE_USER=${REDIS_CACHE_USER}
-      - REDIS_CACHE_PORT
+      - NIFTY_PG_PWD=${NIFTY_PG_PWD}
+      - NIFTY_PG_USER=${NIFTY_PG_USER}
+      - NIFTY_REDIS_PWD=${NIFTY_REDIS_PWD}
+      - NIFTY_REDIS_USER=${NIFTY_REDIS_USER}
+      - NIFTY_REDIS_CACHE_PWD=${NIFTY_REDIS_CACHE_PWD}
+      - NIFTY_REDIS_CACHE_USER=${NIFTY_REDIS_CACHE_USER}
     depends_on:
       postgres:
         condition: service_healthy

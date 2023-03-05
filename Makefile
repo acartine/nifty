@@ -56,7 +56,7 @@ py-clean:
 	pipenv run pyclean .
 
 run-app-local:
-	PRIMARY_CFG=local PYTHONPATH=src pipenv run flask --debug run
+	APP_CONTEXT_CFG=nifty PRIMARY_CFG=local PYTHONPATH=src pipenv run flask --debug run
 
 run-dev: datastore-run run-app-local
 
@@ -64,10 +64,10 @@ run-ui-dev:
 	pushd ui && yarn start
 
 run-trend-link-local:
-	PYTHONPATH=src pipenv run python -m nifty_worker.trend_link
+	APP_CONTEXT_CFG=trend_link PYTHONPATH=src pipenv run python -m nifty_worker.trend_link
 
 run-trend-local:
-	PYTHONPATH=src pipenv run python -m nifty_worker.trend
+	APP_CONTEXT_CFG=trend PYTHONPATH=src pipenv run python -m nifty_worker.trend
 
 stack-run: docker-build trend-docker-build trend-link-docker-build
 	docker compose --profile all up --wait -d
