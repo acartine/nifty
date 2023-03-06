@@ -24,6 +24,7 @@
   "reportMissingImports": true,
   "reportMissingTypeStubs": true,
   "reportUnknownParameterType": true,
+  "reportUntypedFunctionDecorator": true,
 
   "pythonVersion": "3.10",
   "pythonPlatform": "Linux"
