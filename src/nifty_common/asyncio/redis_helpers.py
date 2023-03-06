@@ -28,7 +28,10 @@ async def rint(redis: Redis, key: str, throws: Optional[bool] = True) -> Optiona
 
 
 async def robj(
-    redis: Redis, key: str, cl: Type[TBaseModel], throws: Optional[bool] = True
+    redis: Redis,  # pyright: reportUnknownParameterType=false
+    key: str,
+    cl: Type[TBaseModel],
+    throws: Optional[bool] = True,
 ) -> Optional[TBaseModel]:
     # noinspection PyUnresolvedReferences
     raw = await redis.hgetall(key)
@@ -39,5 +42,7 @@ async def robj(
     return cl.parse_obj(raw) if raw is not None else None
 
 
-async def trending_size(redis: Redis, throws: Optional[bool] = True) -> Optional[int]:
+async def trending_size(
+    redis: Redis, throws: Optional[bool] = True
+) -> Optional[int]:  # pyright: reportUnknownParameterType=false
     return await rint(redis, Key.trending_size, throws)

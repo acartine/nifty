@@ -1,19 +1,21 @@
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, TypeVar
+from typing import Any, Dict, Optional
 
 from redis.asyncio.client import Redis
 
 from nifty_common.asyncio import redis_helpers
 from nifty_common.types import Channel, RedisType
 from nifty_worker.common.asyncio import claim
+from nifty_worker.common.types import ClaimNamespace
 from nifty_worker.common.worker import BaseNiftyWorker, T_Worker
 
 
 class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
-    def __init__(self):
+    def __init__(self, claim_namespace: ClaimNamespace):
         super().__init__()
         self.__redis: Optional[Redis] = None
+        self.__claim_namespace = claim_namespace
 
     async def before_start(self):
         ...
@@ -45,7 +47,7 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
         if self.filter(event):
             logging.debug(event)
             claimed = await claim.claim(
-                self.redis(), f"{self.__class__}:{event.uuid}", 60
+                self.redis(), self.__claim_namespace, event.uuid
             )
             if claimed:
                 await self.on_event(channel, event)

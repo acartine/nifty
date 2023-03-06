@@ -3,7 +3,7 @@ import functools
 import logging
 import time
 from datetime import datetime
-from typing import Awaitable, Callable, Optional, ParamSpec, TypeVar
+from typing import Any, Awaitable, Callable, Optional, ParamSpec, TypeVar
 
 
 def timestamp_ms(*, datetime_ts: Optional[datetime] = None) -> int:
@@ -14,19 +14,21 @@ def timestamp_ms(*, datetime_ts: Optional[datetime] = None) -> int:
     return int(ts * 1000)
 
 
-Param = ParamSpec("Param")
-RetType = TypeVar("RetType")
-OriginalFunc = Callable[Param, RetType]
+_T = TypeVar("_T")
+_OrignalFunc = Callable[..., _T]
 
 
-def retry(max_tries: int, stack_id: str = __name__, first_delay: float = 0.1):
+def retry(
+    max_tries: int, stack_id: str = __name__, first_delay: float = 0.1
+) -> Callable[[_OrignalFunc], _OrignalFunc]:
     """
     Create callable decorator to retry a function
     """
 
-    def decorator(func: OriginalFunc) -> OriginalFunc:
+    def decorator(func: _OrignalFunc[_T]) -> _OrignalFunc[_T]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> _T:
+            ex: Exception | None = None
             for attempt in range(max_tries):
                 # linear for now, keep it simple
                 delay = attempt * first_delay
@@ -37,10 +39,11 @@ def retry(max_tries: int, stack_id: str = __name__, first_delay: float = 0.1):
                 except Exception as e:
                     logging.getLogger(stack_id).debug(e)
                     if attempt >= max_tries - 1:
-                        logging.getLogger(stack_id).error(
-                            f"Exception limit '{max_tries}' exceeded"
-                        )
-                        raise e
+                        ex = e
+                        break
+
+            logging.getLogger(stack_id).error(f"Exception limit '{max_tries}' exceeded")
+            raise ex if ex else Exception(f"Exception limit '{max_tries}' exceeded")
 
         return wrapper
 

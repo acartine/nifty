@@ -27,7 +27,9 @@ load_config(cfg)
 # NIFTY, TREND etc.
 app_context_cfg = os.environ.get("APP_CONTEXT_CFG")
 if app_context_cfg is None:
-    raise Exception("APP_CONTEXT_CONFIG must be set (nifty|trend ...) so we know what configs to load.")
+    raise Exception(
+        "APP_CONTEXT_CONFIG must be set (nifty|trend ...) so we know what configs to load."
+    )
 load_config(cfg, app_context_cfg.lower())
 
 # LOCAL, DEV, PROD, etc. etc.

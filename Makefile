@@ -103,7 +103,12 @@ test-ui-dev:
 py-type-check:
 	pipenv run pyright
 
-py-lint-check:
+py-lint:
 	pipenv run black src -t py310
 
-py-sanity: py-lint-check py-type-check test-integration
+py-lint-check:
+	pipenv run black src -t py310 --check
+
+py-sanity-fast: py-lint-check py-type-check
+py-sanity: py-sanity-fast test-integration
+

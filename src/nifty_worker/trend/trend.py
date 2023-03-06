@@ -3,9 +3,10 @@ from typing import Any, Dict, Optional, Set
 from uuid import uuid1
 
 from nifty_common.helpers import none_throws, timestamp_ms
-from nifty_common.asyncio.redis_helpers import trending_size
+from nifty_common.asyncio import redis_helpers
 from nifty_common.types import Action, ActionType, Channel, Key, TrendEvent
 from nifty_worker.common.asyncio.worker import NiftyWorker
+from nifty_worker.common.types import ClaimNamespace
 from nifty_worker.trend.toplist.async_toplist import AbstractTopList, RedisTopList
 
 
@@ -21,7 +22,7 @@ class TrendWorker(NiftyWorker[Action]):
     def __init__(
         self, *, trend_size: int, toplist_interval_sec: int, toplist_bucket_len_sec: int
     ):
-        super().__init__()
+        super().__init__(ClaimNamespace.trend)
         self._toplist: Optional[AbstractTopList[int]] = None
         self.trend_size = trend_size
         self.toplist_interval_sec = toplist_interval_sec
@@ -36,7 +37,7 @@ class TrendWorker(NiftyWorker[Action]):
         newsize = self.trend_size
         async with self.redis().pipeline() as pipe:
             await pipe.watch(Key.trending_size)
-            cursize = await trending_size(pipe, throws=False)
+            cursize = await redis_helpers.trending_size(pipe, throws=False)
             if newsize != cursize:
                 pipe.multi()
                 # noinspection PyUnresolvedReferences

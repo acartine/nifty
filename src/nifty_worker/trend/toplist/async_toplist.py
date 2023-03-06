@@ -23,19 +23,18 @@ from nifty_common.asyncio import helpers
 from nifty_common.helpers import noneint_throws
 from nifty_common.types import Key
 
-T = TypeVar("T", bound=str | int)
-Param = ParamSpec("Param")
-RetType = TypeVar("RetType")
-OriginalFunc = Callable[Param, Awaitable[RetType]]
+_EntryKey = TypeVar("_EntryKey", bound=str | int)
+_OriginalRet = TypeVar("_OriginalRet")
+_OriginalFunc = Callable[..., Awaitable[_OriginalRet]]
 
 
 @dataclass
-class Entry(Generic[T]):
-    key: T
+class Entry(Generic[_EntryKey]):
+    key: _EntryKey
     count: int
 
 
-class AbstractTopList(Generic[T], abc.ABC):
+class AbstractTopList(Generic[_EntryKey], abc.ABC):
     def __init__(self, max_age: int, bucket_len_sec: Optional[int] = 1):
         if bucket_len_sec is None:
             raise Exception("bucket_len_sec must be > 0")
@@ -43,7 +42,7 @@ class AbstractTopList(Generic[T], abc.ABC):
         self.bucket_len_sec = bucket_len_sec
 
     @abstractmethod
-    async def incr(self, key: T, ts_ms: int):
+    async def incr(self, key: _EntryKey, ts_ms: int):
         pass
 
     @abstractmethod
@@ -51,14 +50,14 @@ class AbstractTopList(Generic[T], abc.ABC):
         pass
 
 
-class RedisTopList(AbstractTopList[T]):
+class RedisTopList(AbstractTopList[_EntryKey]):
     def __init__(
         self,
         root_key: str,
         max_age_sec: int,
-        redis: Redis,
-        ctor: Callable[[Any], T],
-        listener: Callable[[Set[T], Set[T]], Awaitable[None]],
+        redis: Redis,  # pyright: ignore [reportUnknownParameterType]
+        ctor: Callable[[Any], _EntryKey],
+        listener: Callable[[Set[_EntryKey], Set[_EntryKey]], Awaitable[None]],
         bucket_len_sec: Optional[int] = 1,
     ):
         super().__init__(max_age_sec, bucket_len_sec)
@@ -115,7 +114,7 @@ class RedisTopList(AbstractTopList[T]):
     def __bucket_key(self, name: int) -> str:
         return f"{self.bucket_set}:{name}"
 
-    async def __get(self) -> List[Entry[T]]:
+    async def __get(self) -> List[Entry[_EntryKey]]:
         raw = await self.redis.get(Key.trending_size)
         size = noneint_throws(raw, Key.trending_size.value)
         foo = await self.redis.zrange(
@@ -129,10 +128,14 @@ class RedisTopList(AbstractTopList[T]):
         return [Entry(self.ctor(k), v) for k, v in foo]
 
     @staticmethod
-    def __observe() -> Callable[[OriginalFunc], OriginalFunc]:
-        def decorator(func: OriginalFunc) -> OriginalFunc:
+    def __observe() -> Callable[[_OriginalFunc], _OriginalFunc]:
+        def decorator(func: _OriginalFunc[_OriginalRet]) -> _OriginalFunc[_OriginalRet]:
             @functools.wraps(func)
-            async def wrapper(self, *args, **kwargs):
+            async def wrapper(
+                self,  # pyright: ignore [reportUnknownParameterType]
+                *args: Any,
+                **kwargs: Any,
+            ):
                 ret = await func(self, *args, **kwargs)
                 newcache = {item.key for item in await self.__get()}
                 added = newcache - self.cache
@@ -152,7 +155,7 @@ class RedisTopList(AbstractTopList[T]):
 
     @__observe()
     @helpers.retry(max_tries=3, stack_id=f"{__name__}:incr")
-    async def incr(self, key: T, ts_ms: int):
+    async def incr(self, key: _EntryKey, ts_ms: int):
         await self.__reap(ts_ms)
         ts_secs = int(ts_ms / 1000)
         bucket_key = ts_secs - ts_secs % self.bucket_len_sec

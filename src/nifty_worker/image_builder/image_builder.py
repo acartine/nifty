@@ -6,11 +6,12 @@ from selenium import webdriver
 from nifty_common.helpers import timestamp_ms
 from nifty_common.types import Channel, TrendLinkEvent, ImageEvent, UpstreamSource
 from nifty_worker.common.asyncio.worker import NiftyWorker
+from nifty_worker.common.types import ClaimNamespace
 
 
 class ImageBuilderWorker(NiftyWorker[TrendLinkEvent]):
     def __init__(self):
-        super().__init__()
+        super().__init__(ClaimNamespace.image)
 
     async def on_event(self, channel: Channel, msg: TrendLinkEvent):
         pass

@@ -5,11 +5,12 @@ from uuid import uuid1
 from nifty_common import helpers
 from nifty_common.types import Channel, TrendEvent, TrendLinkEvent, UpstreamSource
 from nifty_worker.common.asyncio.worker import NiftyWorker
+from nifty_worker.common.types import ClaimNamespace
 
 
 class TrendLinkWorker(NiftyWorker[TrendEvent]):
     def __init__(self):
-        super().__init__()
+        super().__init__(ClaimNamespace.trend_link)
 
     async def on_event(self, channel: Channel, msg: TrendEvent):
         r = self.redis()

@@ -7,8 +7,8 @@ from psycopg.rows import BaseRowFactory, class_row
 from psycopg_pool import ConnectionPool
 
 from nifty_common import cfg
-from nifty_common.helpers import retry
-from nifty_common.redis_helpers import get_redis, rint, robj, trending_size
+from nifty_common import helpers
+from nifty_common import redis_helpers
 from nifty_common.types import Key, Link, RedisType
 from .types import Id, Trending, TrendingItem, Url
 
@@ -20,8 +20,8 @@ _conninfo = (
     f"@{cfg.g('postgres', 'host')}/postgres"
 )
 _pool = ConnectionPool(conninfo=_conninfo)
-redis_client = get_redis(RedisType.STD)
-cache = get_redis(RedisType.CACHE)
+redis_client = redis_helpers.get_redis(RedisType.STD)
+cache = redis_helpers.get_redis(RedisType.CACHE)
 
 
 @atexit.register
@@ -31,7 +31,7 @@ def close():
 
 def _execute(
     sql: str,
-    args: Tuple,
+    args: Tuple[str | int, ...],
     row_factory: BaseRowFactory[T],
     processor: Callable[[Cursor[T]], R],
 ) -> R:
@@ -42,11 +42,15 @@ def _execute(
             return processor(cur)
 
 
-def _ex_one(sql: str, args: Tuple, row_factory: BaseRowFactory[T]) -> Optional[T]:
+def _ex_one(
+    sql: str, args: Tuple[str | int, ...], row_factory: BaseRowFactory[T]
+) -> Optional[T]:
     return _execute(sql, args, row_factory, lambda cur: cur.fetchone())
 
 
-def _ex_all(sql: str, args: Tuple, row_factory: BaseRowFactory[T]) -> List[T]:
+def _ex_all(
+    sql: str, args: Tuple[str | int, ...], row_factory: BaseRowFactory[T]
+) -> List[T]:
     return _execute(sql, args, row_factory, lambda cur: cur.fetchall())
 
 
@@ -114,7 +118,7 @@ ON l.id = %s AND l.id = ul.long_url_id;
     """
 
 
-@retry(max_tries=3, stack_id=__name__)
+@helpers.retry(max_tries=3, stack_id=__name__)
 def _cache_upsert_link(link: Link):
     link_key = Key.link_by_link_id.sub(link.id)
     link_id_key = Key.link_id_cache.sub(link.short_url)
@@ -132,10 +136,10 @@ def _get_link_from_cache(short_url: str) -> Optional[Link]:
 
     # TODO make a lua script and execute both on server side
     # we want to do this atomically, but for now let's get this working
-    link_id = rint(cache, link_id_key)
+    link_id = redis_helpers.rint(cache, link_id_key)
     if link_id is not None:
         link_key = Key.link_by_link_id.sub(link_id)
-        link = robj(cache, link_key, Link, throws=False)
+        link = redis_helpers.robj(cache, link_key, Link, throws=False)
         if link is None:
             _logger.debug(f"cache MISS - short_url:{short_url} , link_id:{link_id}")
             return None
@@ -218,10 +222,12 @@ def get_links_by_id(ids: List[int]) -> List[Link]:
 
 
 def get_trending() -> Trending:
-    tr_sz = trending_size(redis_client)
+    tr_sz = redis_helpers.trending_size(redis_client)
     if tr_sz is None:
         return Trending(list=[])
 
+    # pyright doesn't like this because redis lib is still using the old lowercase types
+    # pyright: reportGeneralTypeIssues=false
     results: List[Tuple[int, int]] = [
         (key, int(score))
         for key, score in redis_client.zrange(

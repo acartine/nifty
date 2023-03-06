@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from uuid import uuid1
 
 from flask import Flask, jsonify, redirect, send_from_directory
@@ -43,7 +44,7 @@ def favicon():
 
 # for local development, in prod it would come from nginx
 @app.route("/<path:subpath>")
-def static_files(subpath):
+def static_files(subpath: Path):
     # Serve any other files from the static directory
     logger.error(f"sending {subpath} from 'static'")
     return send_from_directory("static", subpath)
@@ -91,7 +92,7 @@ def trending():
 
 
 @app.route("/<short_url>", methods=["GET"])
-def lookup(short_url):
+def lookup(short_url: str):
     # Look up the long URL for the given short URL
     link: Link | None = store.get_long_url(short_url)
 

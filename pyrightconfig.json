@@ -17,10 +17,13 @@
     "DEBUG": true
   },
 
+  "strict": [
+  ],
   "stubPath": "typings",
 
   "reportMissingImports": true,
-  "reportMissingTypeStubs": false,
+  "reportMissingTypeStubs": true,
+  "reportUnknownParameterType": true,
 
   "pythonVersion": "3.10",
   "pythonPlatform": "Linux"

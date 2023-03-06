@@ -2,7 +2,6 @@ import logging
 from typing import Optional, Type, TypeVar
 
 from pydantic import BaseModel
-from redis.asyncio.client import Redis as AsyncRedis
 from redis.client import Redis
 
 from nifty_common import cfg
@@ -14,36 +13,35 @@ TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
 
 def get_redis(redis_type: RedisType) -> Redis:
     print(redis_type.cfg_key)
-    return Redis(
+    foo = Redis(
         host=cfg.g(redis_type.cfg_key, "host"),
         username=cfg.g(redis_type.cfg_key, "user"),
         password=cfg.g(redis_type.cfg_key, "pwd"),
         port=cfg.gint_fb(redis_type.cfg_key, "port", 6379),
         decode_responses=True,
     )
+    return foo
 
 
-def get_redis_async(redis_type: RedisType) -> AsyncRedis:
-    return AsyncRedis(
-        host=cfg.g(redis_type.cfg_key, "host"),
-        username=cfg.g(redis_type.cfg_key, "user"),
-        password=cfg.g(redis_type.cfg_key, "pwd"),
-        decode_responses=True,
-    )
-
-
-def rint_throws(redis: Redis, key: str) -> int:
+def rint_throws(
+    redis: Redis, key: str  # pyright: ignore [reportUnknownParameterType]
+) -> int:
     raw = redis.get(key)
     return noneint_throws(raw, key)
 
 
-def rint(redis: Redis, key: str) -> Optional[int]:
+def rint(
+    redis: Redis, key: str  # pyright: ignore [reportUnknownParameterType]
+) -> Optional[int]:
     raw = redis.get(key)
     return int(raw) if raw is not None else None
 
 
 def robj(
-    redis: Redis, key: str, cl: Type[TBaseModel], throws: Optional[bool] = True
+    redis: Redis,  # pyright: ignore [reportUnknownParameterType]
+    key: str,
+    cl: Type[TBaseModel],
+    throws: Optional[bool] = True,
 ) -> Optional[TBaseModel]:
     raw = redis.hgetall(key)
     logging.getLogger().debug(f"Raw HGETALL response: {raw}")
@@ -53,5 +51,7 @@ def robj(
     return cl.parse_obj(raw) if raw is not None else None
 
 
-def trending_size(redis: Redis) -> Optional[int]:
+def trending_size(
+    redis: Redis,  # pyright: ignore [reportUnknownParameterType
+) -> Optional[int]:
     return rint_throws(redis, Key.trending_size)
