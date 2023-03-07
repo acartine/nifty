@@ -84,7 +84,7 @@ stack-base-stop:
 test: stack-stop db-wipe stack-run db-apply-local
 	pushd ui && yarn cypress run ${ARGS}; \
 	e=$$?; \
-	popd; \false
+	popd; \
 	make stack-stop; \
 	exit $$e
 
