@@ -1,3 +1,6 @@
+# fixes stubs like redis that use generics when the code does not
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, Optional, TypeVar
@@ -31,7 +34,7 @@ class BaseNiftyWorker(Generic[T_Worker], ABC):
 class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
     def __init__(self):
         super().__init__()
-        self.__redis: Optional[Redis] = None
+        self.__redis: Optional[Redis[str]] = None
 
     @abstractmethod
     def on_event(self, channel: Channel, msg: T_Worker):
@@ -48,7 +51,7 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
         """
         ...
 
-    def redis(self) -> Redis:
+    def redis(self) -> Redis[str]:
         if not self.__redis:
             self.__redis = get_redis(RedisType.STD)
         return self.__redis
@@ -75,12 +78,10 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
         pubsub.subscribe(src_channel)
         self.running = True
         while self.running:
-            self.__handle(
-                src_channel,
-                # redis uses 'dict' instead of 'Dict' which is causing this error
-                # suppressing pyright means we can avoid deprecated types in our api
-                pubsub.get_message(
-                    ignore_subscribe_messages=True,
-                    timeout=listen_interval if listen_interval else 5,
-                ),
-            )  # pyright: reportGeneralTypeIssues=false
+            msg: Dict[
+                str, Any
+            ] = pubsub.get_message(  # pyright: ignore [reportGeneralTypeIssues]
+                ignore_subscribe_messages=True,
+                timeout=listen_interval if listen_interval else 5,
+            )
+            self.__handle(src_channel, msg)

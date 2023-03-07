@@ -1,3 +1,6 @@
+# fixes stubs like redis that use generics when the code does not
+from __future__ import annotations
+
 import logging
 from typing import Optional, Type, TypeVar
 
@@ -10,13 +13,10 @@ from nifty_common.types import Key, RedisType
 
 TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
 
-# redis typing makes this difficult for now
-# pyright: reportMissingTypeArgument=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false
-
 
 def get_redis(
     redis_type: RedisType,
-) -> Redis:
+) -> Redis[str]:
     print(redis_type.cfg_key)
     return Redis(
         host=cfg.g(redis_type.cfg_key, "host"),
@@ -27,13 +27,15 @@ def get_redis(
     )
 
 
-async def rint(redis: Redis, key: str, throws: Optional[bool] = True) -> Optional[int]:
+async def rint(
+    redis: Redis[str], key: str, throws: Optional[bool] = True
+) -> Optional[int]:
     raw = await redis.get(key)
     return noneint_throws(raw, key) if throws else optint_or_none(raw)
 
 
 async def robj(
-    redis: Redis,
+    redis: Redis[str],
     key: str,
     cl: Type[TBaseModel],
     throws: Optional[bool] = True,
@@ -46,5 +48,7 @@ async def robj(
     return cl.parse_obj(raw) if raw else None
 
 
-async def trending_size(redis: Redis, throws: Optional[bool] = True) -> Optional[int]:
+async def trending_size(
+    redis: Redis[str], throws: Optional[bool] = True
+) -> Optional[int]:
     return await rint(redis, Key.trending_size, throws)

@@ -1,3 +1,6 @@
+# fixes stubs like redis that use generics when the code does not
+from __future__ import annotations
+
 import logging
 from typing import Optional
 
@@ -9,7 +12,7 @@ from nifty_worker.common.types import ClaimNamespace
 
 @helpers.retry(max_tries=3, stack_id=__name__)
 async def claim(
-    redis: Redis,  # pyright: ignore [reportUnknownParameterType]
+    redis: Redis[str],  # pyright: ignore [reportUnknownParameterType]
     claim_namespace: ClaimNamespace,
     key: str,
     *,

@@ -1,3 +1,6 @@
+# fixes stubs like redis that use generics when the code does not
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
@@ -14,7 +17,7 @@ from nifty_worker.common.worker import BaseNiftyWorker, T_Worker
 class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
     def __init__(self, claim_namespace: ClaimNamespace):
         super().__init__()
-        self.__redis: Optional[Redis] = None
+        self.__redis: Optional[Redis[str]] = None
         self.__claim_namespace = claim_namespace
 
     async def before_start(self):
@@ -33,7 +36,7 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
         """
         ...
 
-    def redis(self) -> Redis:
+    def redis(self) -> Redis[str]:
         if not self.__redis:
             self.__redis = redis_helpers.get_redis(RedisType.STD)
         return self.__redis
@@ -59,11 +62,17 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
         redis = redis_helpers.get_redis(
             RedisType.STD
         )  # STD does not have LRU memory limit
-        async with redis.pubsub(ignore_subscribe_messages=True) as pubsub:
-            await pubsub.subscribe(src_channel)
+        async with redis.pubsub(  # pyright: ignore [reportUnknownMemberType]
+            ignore_subscribe_messages=True
+        ) as pubsub:
+            await pubsub.subscribe(  # pyright: ignore [reportUnknownMemberType]
+                src_channel
+            )
             self.running = True
             while self.running:
-                msg = await pubsub.get_message(
+                msg: Dict[
+                    str, Any
+                ] = await pubsub.get_message(  # pyright: ignore [reportUnknownMemberType]
                     ignore_subscribe_messages=True,
                     timeout=listen_interval if listen_interval else 5,
                 )

@@ -1,3 +1,6 @@
+# fixes stubs like redis that use generics when the code does not
+from __future__ import annotations
+
 import logging
 
 from redis.client import Redis
@@ -8,7 +11,7 @@ from nifty_common.helpers import retry
 # touch
 @retry(max_tries=3, stack_id=__name__)
 def claim(
-    redis: Redis,  # pyright: ignore [reportUnknownParameterType]
+    redis: Redis[str],
     key: str,
     lifetime_sec: int,
 ) -> bool:

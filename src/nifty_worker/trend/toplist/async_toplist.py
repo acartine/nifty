@@ -1,3 +1,6 @@
+# fixes stubs like redis that use generics when the code does not
+from __future__ import annotations
+
 import abc
 import functools
 import logging
@@ -11,7 +14,6 @@ from typing import (
     Generic,
     List,
     Optional,
-    ParamSpec,
     Set,
     TypeVar,
     cast,
@@ -42,11 +44,11 @@ class AbstractTopList(Generic[_EntryKey], abc.ABC):
         self.bucket_len_sec = bucket_len_sec
 
     @abstractmethod
-    async def incr(self, key: _EntryKey, ts_ms: int):
+    async def incr(self, key: _EntryKey, ts_ms: int) -> None:
         pass
 
     @abstractmethod
-    async def reap(self, ts: int):
+    async def reap(self, ts: int) -> None:
         pass
 
 
@@ -55,7 +57,7 @@ class RedisTopList(AbstractTopList[_EntryKey]):
         self,
         root_key: str,
         max_age_sec: int,
-        redis: Redis,  # pyright: ignore [reportUnknownParameterType]
+        redis: Redis[str],
         ctor: Callable[[Any], _EntryKey],
         listener: Callable[[Set[_EntryKey], Set[_EntryKey]], Awaitable[None]],
         bucket_len_sec: Optional[int] = 1,
@@ -64,7 +66,7 @@ class RedisTopList(AbstractTopList[_EntryKey]):
         self.redis = redis
         self.ctor = ctor
         self.listener = listener
-        self.cache = set()
+        self.cache: Set[_EntryKey] = set()
 
         # SortedSet { key: link_id, score: hits }
         self.toplist_set = root_key
@@ -78,7 +80,7 @@ class RedisTopList(AbstractTopList[_EntryKey]):
     @helpers.retry(max_tries=3, stack_id=f"{__name__}:reap")
     async def __reap(self, ts_ms: int):
         while True:
-            async with self.redis.pipeline() as pipe:
+            async with self.redis.pipeline() as pipe:  # pyright: ignore []
                 await pipe.watch(self.buckets_list)
 
                 # the typing is wrong so we have to force cast to proper type.
@@ -128,18 +130,20 @@ class RedisTopList(AbstractTopList[_EntryKey]):
         return [Entry(self.ctor(k), v) for k, v in foo]
 
     @staticmethod
-    def __observe() -> Callable[[_OriginalFunc], _OriginalFunc]:
+    def __observe() -> (
+        Callable[[_OriginalFunc[_OriginalRet]], _OriginalFunc[_OriginalRet]]
+    ):
         def decorator(func: _OriginalFunc[_OriginalRet]) -> _OriginalFunc[_OriginalRet]:
             @functools.wraps(func)
             async def wrapper(
-                self,  # pyright: ignore [reportUnknownParameterType]
+                self: RedisTopList[_EntryKey],
                 *args: Any,
                 **kwargs: Any,
             ):
                 ret = await func(self, *args, **kwargs)
-                newcache = {item.key for item in await self.__get()}
-                added = newcache - self.cache
-                removed = self.cache - newcache
+                newcache: Set[_EntryKey] = {item.key for item in await self.__get()}
+                added: Set[_EntryKey] = newcache - self.cache
+                removed: Set[_EntryKey] = self.cache - newcache
                 self.cache = newcache
                 if added or removed:
                     await self.listener(added, removed)
@@ -150,12 +154,16 @@ class RedisTopList(AbstractTopList[_EntryKey]):
         return decorator
 
     @__observe()
-    async def reap(self, ts_ms: int):
+    async def reap(  # pyright: ignore [reportIncompatibleMethodOverride]
+        self, ts_ms: int
+    ) -> None:
         await self.__reap(ts_ms)
 
     @__observe()
     @helpers.retry(max_tries=3, stack_id=f"{__name__}:incr")
-    async def incr(self, key: _EntryKey, ts_ms: int):
+    async def incr(  # pyright: ignore [reportIncompatibleMethodOverride]
+        self, key: _EntryKey, ts_ms: int
+    ):
         await self.__reap(ts_ms)
         ts_secs = int(ts_ms / 1000)
         bucket_key = ts_secs - ts_secs % self.bucket_len_sec
