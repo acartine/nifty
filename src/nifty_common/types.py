@@ -35,8 +35,8 @@ class Key(str, Enum):
 class Channel(str, Enum):
     action = "nifty:action"
     trend = "nifty:trend"
-    trend_link = "nifty:trend:link"
-    image_builder = "nifty:trend:link:image"
+    trend_link = "nifty:trend_link"
+    image_builder = "nifty:image"
 
 
 class Link(BaseModel):
