@@ -10,6 +10,9 @@ from nifty_common.types import Key, RedisType
 
 TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
 
+# redis typing makes this difficult for now
+# pyright: reportMissingTypeArgument=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false
+
 
 def get_redis(redis_type: RedisType) -> Redis:
     print(redis_type.cfg_key)
@@ -23,22 +26,18 @@ def get_redis(redis_type: RedisType) -> Redis:
     return foo
 
 
-def rint_throws(
-    redis: Redis, key: str  # pyright: ignore [reportUnknownParameterType]
-) -> int:
+def rint_throws(redis: Redis, key: str) -> int:
     raw = redis.get(key)
     return noneint_throws(raw, key)
 
 
-def rint(
-    redis: Redis, key: str  # pyright: ignore [reportUnknownParameterType]
-) -> Optional[int]:
+def rint(redis: Redis, key: str) -> Optional[int]:
     raw = redis.get(key)
     return int(raw) if raw is not None else None
 
 
 def robj(
-    redis: Redis,  # pyright: ignore [reportUnknownParameterType]
+    redis: Redis,
     key: str,
     cl: Type[TBaseModel],
     throws: Optional[bool] = True,
@@ -48,10 +47,10 @@ def robj(
     if throws:
         return cl.parse_obj(none_throws(raw, key))
 
-    return cl.parse_obj(raw) if raw is not None else None
+    return cl.parse_obj(raw) if raw else None
 
 
 def trending_size(
-    redis: Redis,  # pyright: ignore [reportUnknownParameterType
+    redis: Redis,
 ) -> Optional[int]:
     return rint_throws(redis, Key.trending_size)

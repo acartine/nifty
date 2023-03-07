@@ -1,17 +1,27 @@
 import configparser
 import os
-from typing import Callable, Optional, TypeVar
+from typing import Mapping, MutableMapping, Optional, TypeAlias, TypeVar
+from nifty_common.helpers import none_throws
+
+from nifty_common.types import AppContextName
+
+_Section: TypeAlias = Mapping[str, str]
+_Parser: TypeAlias = MutableMapping[str, _Section]
 
 
 class _EnvInterpolation(configparser.BasicInterpolation):
     """Interpolation which expands environment variables in values."""
 
-    def before_get(self, parser, section, option, value, defaults):
+    def before_get(
+        self, parser: _Parser, section: str, option: str, value: str, defaults: _Section
+    ):
         value = super().before_get(parser, section, option, value, defaults)
         return os.path.expandvars(value)
 
 
 CFG_FILE_PATH = "config"
+APP_NAME_CFG_KEY = "APP_CONTEXT_CFG"
+
 cfg = configparser.ConfigParser(interpolation=_EnvInterpolation())
 
 
@@ -24,13 +34,19 @@ def load_config(l_cfg: configparser.ConfigParser, prefix: Optional[str] = None):
 
 load_config(cfg)
 
-# NIFTY, TREND etc.
-app_context_cfg = os.environ.get("APP_CONTEXT_CFG")
-if app_context_cfg is None:
-    raise Exception(
-        "APP_CONTEXT_CONFIG must be set (nifty|trend ...) so we know what configs to load."
+app_name: Optional[AppContextName] = None
+try:
+    app_context_cfg = none_throws(
+        os.environ.get(APP_NAME_CFG_KEY), f"missing APP_CONTEXT_CFG"
     )
-load_config(cfg, app_context_cfg.lower())
+    app_name = AppContextName[app_context_cfg.lower()]
+except:
+    raise Exception(
+        "APP_CONTEXT_CONFIG must be set to one of"
+        f" {[e.name for e in AppContextName]} so we know what configs to load.  "
+        "Environment supplied '{os.environ.get(APP_NAME_CFG_KEY)}'"
+    )
+load_config(cfg, app_name.value)
 
 # LOCAL, DEV, PROD, etc. etc.
 primary_cfg = os.environ.get("PRIMARY_CFG")

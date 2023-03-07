@@ -1,10 +1,16 @@
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Set
-
 from pydantic import BaseModel
 
-from nifty_common.helpers import timestamp_ms
+# NEVER import anything outside this module :-)
+
+
+class AppContextName(str, Enum):
+    integration_test = "integration_test"
+    nifty = "nifty"
+    trend = "trend"
+    trend_link = "trend_link"
 
 
 class RedisType(Enum):
@@ -47,7 +53,7 @@ class Link(BaseModel):
     def redis_dict(self) -> Dict[str, int | str]:
         return {
             **self.dict(exclude={"created_at"}),
-            "created_at": timestamp_ms(datetime_ts=self.created_at),
+            "created_at": int(self.created_at.timestamp() * 1000),
         }
 
 

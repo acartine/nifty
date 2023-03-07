@@ -11,7 +11,7 @@ def retry(
     max_tries: int,
     stack_id: Optional[str] = __name__,
     first_delay: Optional[float] = 0.1,
-) -> Callable[[_OrignalFunc], _OrignalFunc]:
+) -> Callable[[_OrignalFunc[_T]], _OrignalFunc[_T]]:
     if stack_id is None:
         raise Exception("stack_id cannot be None")
 

@@ -89,7 +89,7 @@ test: stack-stop db-wipe stack-run db-apply-local
 	exit $$e
 
 test-integration: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
-	PRIMARY_CFG=local PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
+	APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
         e=$$?; \
 	make datastore-stop; \
         exit $$e

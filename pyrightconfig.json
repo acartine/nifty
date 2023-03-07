@@ -18,6 +18,7 @@
   },
 
   "strict": [
+    "src/nifty_common/**"
   ],
   "stubPath": "typings",
 

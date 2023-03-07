@@ -1,9 +1,10 @@
-import asyncio
 import functools
 import logging
 import time
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Optional, ParamSpec, TypeVar
+from typing import Any, Callable, Optional, TypeVar
+
+# do NOT import anything from our stack here!
 
 
 def timestamp_ms(*, datetime_ts: Optional[datetime] = None) -> int:
@@ -20,7 +21,7 @@ _OrignalFunc = Callable[..., _T]
 
 def retry(
     max_tries: int, stack_id: str = __name__, first_delay: float = 0.1
-) -> Callable[[_OrignalFunc], _OrignalFunc]:
+) -> Callable[[_OrignalFunc[_T]], _OrignalFunc[_T]]:
     """
     Create callable decorator to retry a function
     """

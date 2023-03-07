@@ -10,8 +10,13 @@ from nifty_common.types import Key, RedisType
 
 TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
 
+# redis typing makes this difficult for now
+# pyright: reportMissingTypeArgument=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false
 
-def get_redis(redis_type: RedisType) -> Redis:
+
+def get_redis(
+    redis_type: RedisType,
+) -> Redis:
     print(redis_type.cfg_key)
     return Redis(
         host=cfg.g(redis_type.cfg_key, "host"),
@@ -28,21 +33,18 @@ async def rint(redis: Redis, key: str, throws: Optional[bool] = True) -> Optiona
 
 
 async def robj(
-    redis: Redis,  # pyright: reportUnknownParameterType=false
+    redis: Redis,
     key: str,
     cl: Type[TBaseModel],
     throws: Optional[bool] = True,
 ) -> Optional[TBaseModel]:
-    # noinspection PyUnresolvedReferences
     raw = await redis.hgetall(key)
     logging.debug(f"Raw HGETALL response: {raw}")
     if throws:
         return cl.parse_obj(none_throws(raw, key))
 
-    return cl.parse_obj(raw) if raw is not None else None
+    return cl.parse_obj(raw) if raw else None
 
 
-async def trending_size(
-    redis: Redis, throws: Optional[bool] = True
-) -> Optional[int]:  # pyright: reportUnknownParameterType=false
+async def trending_size(redis: Redis, throws: Optional[bool] = True) -> Optional[int]:
     return await rint(redis, Key.trending_size, throws)
