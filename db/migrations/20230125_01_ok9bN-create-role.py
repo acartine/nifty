@@ -29,15 +29,15 @@ $do$;
 
 def get_pwd():
     # TODO this should probably be pulled from secrets manager
-    pwd = os.environ.get('PG_PWD')
+    pwd = os.environ.get("NIFTY_PG_PWD")
     if not pwd:
-        raise Exception('PG_PWD must be set')
+        raise Exception("PG_PWD must be set")
     return pwd
 
 
 def apply_step(conn):
     cursor = conn.cursor()
-    cursor.execute(apply_sql.replace('$PG_PWD$', get_pwd()))
+    cursor.execute(apply_sql.replace("$PG_PWD$", get_pwd()))
 
 
 rollback_sql = """
@@ -65,6 +65,4 @@ def rollback_step(conn):
     cursor.execute(rollback_sql)
 
 
-steps = [
-    step(apply_step, rollback_step)
-]
+steps = [step(apply_step, rollback_step)]

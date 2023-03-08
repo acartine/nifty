@@ -1,35 +1,17 @@
 FROM python:3.10
 
-# Install pipenv
-RUN pip install pipenv
+COPY /src/requirements.txt /app/requirements.txt
 
-# Compute the hash of your source files
-ARG SOURCE_HASH=$(find /src/ /config.ini -type f -exec sha256sum {} \; | sha256sum | cut -d' ' -f1)
-
-# Store the hash in an environment variable
-ENV SOURCE_HASH=$SOURCE_HASH
-
-# Only copy the sources if the hash has changed
-COPY /src/ /app
-COPY config.ini /app/config.ini
-ONBUILD RUN set -e; \
-    NEW_HASH=$(find /src/ /config.ini -type f -exec sha256sum {} \; | sha256sum | cut -d' ' -f1); \
-    if [ "$SOURCE_HASH" != "$NEW_HASH" ]; then \
-        # Perform the COPY step for your sources
-        rm -rf /app/src /app/config.ini; \
-        COPY /src/ /app; \
-        COPY config.ini /app/config.ini; \
-    fi
-
-# Copy the Pipfile.lock file
-COPY Pipfile.lock /app/Pipfile.lock
-COPY Pipfile /app/Pipfile
-
-# Set the working directory to the app directory
 WORKDIR /app
+RUN python -m pip install -r requirements.txt
 
-# Install the dependencies from the Pipfile.lock file
-RUN pipenv install --system --deploy
+ENV APP_CONTEXT_CFG=nifty
+COPY /config/config.ini /app/config/config.ini
+COPY /config/nifty_config.ini /app/config/nifty_config.ini
+COPY /src/nifty_common/ /app/nifty_common
+COPY /src/nifty/ /app/nifty
+COPY /src/static/ /app/static
+COPY /src/app.py /app/app.py
 
-# Run the app using Gunicorn
+
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app"]

@@ -1,0 +1,35 @@
+{
+  "include": [
+    "src"
+  ],
+  
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "src/experimental",
+    "src/typestubs"
+  ],
+
+  "ignore": [
+  ],
+
+  "defineConstant": {
+    "DEBUG": true
+  },
+
+  "strict": [
+    "src/nifty_common/**",
+    "src/nifty/**",
+    "src/nifty_worker/trend/toplist/async**",
+    "src/util/**"
+  ],
+  "stubPath": "typings",
+
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": true,
+  "reportUnknownParameterType": true,
+  "reportUntypedFunctionDecorator": true,
+
+  "pythonVersion": "3.10",
+  "pythonPlatform": "Linux"
+}

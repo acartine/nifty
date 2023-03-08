@@ -15,7 +15,7 @@ base62_chars = string.digits + string.ascii_letters
 
 # Define a function to convert a number to base 62
 def base62_encode(num: int) -> str:
-    base62 = ''
+    base62 = ""
     while num > 0:
         num, remainder = divmod(num, 62)
         base62 = base62_chars[remainder] + base62

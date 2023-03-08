@@ -29,15 +29,70 @@ services:
       timeout: 30s
       retries: 30
     volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     networks:
       - nw
 
+  redis-cache:
+    container_name: redis-cache
+    image: redis:7.0.7
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli --user healthcheck --pass hclocal ping | grep PONG" ]
+      interval: 1s
+      timeout: 30s
+      retries: 30
+    volumes:
+      - ./config/redis-cache.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6380:6379"
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    networks:
+      - nw
+
+  trend:
+    profiles:
+      - worker
+      - all
+    container_name: trend
+    image: acartine/nifty-trend:v1
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - REDIS_HOST=redis
+      - TREND_REDIS_PWD=${TREND_REDIS_PWD}
+      - TREND_REDIS_USER=${TREND_REDIS_USER}
+    depends_on:
+      redis:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - nw
+
+  trend-link:
+    profiles:
+      - worker
+      - all
+    container_name: trend-link
+    image: acartine/nifty-trend-link:v1
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
+      - REDIS_HOST=redis
+      - TREND_LINK_REDIS_PWD=${TREND_LINK_REDIS_PWD}
+      - TREND_LINK_REDIS_USER=${TREND_LINK_REDIS_USER}
+    depends_on:
+      redis:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    networks:
+      - nw
+
   nifty:
     profiles:
+      - base
       - all
     container_name: nifty
     image: acartine/nifty:v1
@@ -46,26 +101,32 @@ services:
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-DEBUG}
       - PG_HOST=postgres
-      - PG_PWD=${PG_PWD}
-      - PG_USER=${PG_USER}
       - REDIS_HOST=redis
-      - REDIS_PWD=${REDIS_PWD}
-      - REDIS_USER=${REDIS_USER}
+      - REDIS_CACHE_HOST=redis-cache
+      - NIFTY_PG_PWD=${NIFTY_PG_PWD}
+      - NIFTY_PG_USER=${NIFTY_PG_USER}
+      - NIFTY_REDIS_PWD=${NIFTY_REDIS_PWD}
+      - NIFTY_REDIS_USER=${NIFTY_REDIS_USER}
+      - NIFTY_REDIS_CACHE_PWD=${NIFTY_REDIS_CACHE_PWD}
+      - NIFTY_REDIS_CACHE_USER=${NIFTY_REDIS_CACHE_USER}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      redis-cache:
         condition: service_healthy
     networks:
       - nw
 
   nginx:
     profiles:
+      - base
       - all
     container_name: nginx
     image: nginx:1.23.3
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./src/static:/app/static
     ports:
       - "8080:80"
