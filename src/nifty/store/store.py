@@ -38,7 +38,7 @@ def _execute(
     _logger.debug(args)
     with _pool.connection() as conn:
         with conn.cursor(row_factory=row_factory) as cur:
-            cur.execute(sql, args)  # type: ignore
+            cur.execute(sql, args)
             return processor(cur)
 
 

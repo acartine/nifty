@@ -11,6 +11,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    Coroutine,
     Generic,
     List,
     Optional,
@@ -27,7 +28,7 @@ from nifty_common.types import Key
 
 _EntryKey = TypeVar("_EntryKey", bound=str | int)
 _OriginalRet = TypeVar("_OriginalRet")
-_OriginalFunc = Callable[..., Awaitable[_OriginalRet]]
+_OriginalFunc = Callable[..., Coroutine[Any, Any, _OriginalRet]]
 
 
 @dataclass
@@ -80,7 +81,7 @@ class RedisTopList(AbstractTopList[_EntryKey]):
     @helpers.retry(max_tries=3, stack_id=f"{__name__}:reap")
     async def __reap(self, ts_ms: int):
         while True:
-            async with self.redis.pipeline() as pipe:  # pyright: ignore []
+            async with self.redis.pipeline() as pipe:
                 await pipe.watch(self.buckets_list)
 
                 # the typing is wrong so we have to force cast to proper type.
@@ -154,10 +155,8 @@ class RedisTopList(AbstractTopList[_EntryKey]):
         return decorator
 
     @__observe()
-    async def reap(  # pyright: ignore [reportIncompatibleMethodOverride]
-        self, ts_ms: int
-    ) -> None:
-        await self.__reap(ts_ms)
+    async def reap(self, ts: int) -> None:
+        await self.__reap(ts)
 
     @__observe()
     @helpers.retry(max_tries=3, stack_id=f"{__name__}:incr")

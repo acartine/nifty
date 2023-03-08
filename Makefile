@@ -31,6 +31,9 @@ db-rollback-all-local:
 db-wipe:
 	docker volume rm -f nifty_postgres-data
 
+db-wipe-soft:
+	PYTHONPATH=src pipenv run python -m util.db.clean
+
 docker-build: py-clean
 	docker build -t acartine/nifty:v1 ${ARGS} .
 
@@ -109,6 +112,17 @@ py-lint:
 py-lint-check:
 	pipenv run black src -t py310 --check
 
-py-sanity-fast: py-lint-check py-type-check
-py-sanity: py-sanity-fast test-integration
+py-sanity: py-lint-check py-type-check
+py-sanity-full: py-sanity-fast test-integration
+
+sanity-full: py-sanity stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local stack-run
+	APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
+        e=$$?; \
+	make db-wipe-soft; \
+	e=$$?; \
+	pushd ui && yarn cypress run ${ARGS}; \
+	e=$$?; \
+	popd; \
+	make stack-stop; \
+	exit $$e
 

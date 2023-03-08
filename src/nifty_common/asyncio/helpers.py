@@ -1,10 +1,10 @@
 import asyncio
 import functools
 import logging
-from typing import Any, Awaitable, Callable, Optional, TypeVar
+from typing import Any, Callable, Coroutine, Optional, TypeVar
 
 _T = TypeVar("_T")
-_OrignalFunc = Callable[..., Awaitable[_T]]
+_OrignalFunc = Callable[..., Coroutine[Any, Any, _T]]
 
 
 def retry(
