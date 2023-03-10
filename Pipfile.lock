@@ -353,11 +353,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:15136a251127da2d2e77ac7a1bc231eb504654f7e3346d93613a13f2e2787535",
-                "sha256:1c39d42bda4cb89f7fdcad52b6762e3c309ec8f8715b27c684176b7d71283242"
+                "sha256:2ee892cd5f29f3373097f5a814697e397cf3ce313616df0af11231e2ad118077",
+                "sha256:b78aaa36f6b90a074c1fa651168723acbf45d14cb1196b6f02c0fd07f17623b2"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==67.5.1"
+            "version": "==67.6.0"
         },
         "sniffio": {
             "hashes": [
@@ -977,11 +977,11 @@
         },
         "pyright": {
             "hashes": [
-                "sha256:51cc5f05807b1fb53f9f0e14736b8f772b500a3ba4e0edeb99727e68e700d9ea",
-                "sha256:6c3cd394473e55a516ebe443d02b83e63456ef29f052dcf8e64e7875c1418fa6"
+                "sha256:3fd6528280eb649f8b64b7ece55299f01e340d29f4cf257da876957e3ee24062",
+                "sha256:89082de2fbd240fa75767b57824f4d8516f2fb9005047265a67b895547c6272f"
             ],
             "index": "pypi",
-            "version": "==1.1.296"
+            "version": "==1.1.297"
         },
         "pytest": {
             "hashes": [
@@ -1031,11 +1031,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:15136a251127da2d2e77ac7a1bc231eb504654f7e3346d93613a13f2e2787535",
-                "sha256:1c39d42bda4cb89f7fdcad52b6762e3c309ec8f8715b27c684176b7d71283242"
+                "sha256:2ee892cd5f29f3373097f5a814697e397cf3ce313616df0af11231e2ad118077",
+                "sha256:b78aaa36f6b90a074c1fa651168723acbf45d14cb1196b6f02c0fd07f17623b2"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==67.5.1"
+            "version": "==67.6.0"
         },
         "six": {
             "hashes": [

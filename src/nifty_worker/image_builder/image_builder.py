@@ -1,10 +1,11 @@
 from typing import Any, Dict
-from uuid import uuid1
-import io
-from PIL import Image
-from selenium import webdriver
-from nifty_common.helpers import timestamp_ms
-from nifty_common.types import Channel, TrendLinkEvent, ImageEvent, UpstreamSource
+
+# from uuid import uuid1
+# import io
+# from PIL import Image
+# from selenium import webdriver
+# from nifty_common.helpers import timestamp_ms
+from nifty_common.types import Channel, TrendLinkEvent
 from nifty_worker.common.asyncio.worker import NiftyWorker
 from nifty_worker.common.types import ClaimNamespace
 

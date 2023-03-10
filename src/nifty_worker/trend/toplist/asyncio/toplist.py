@@ -160,9 +160,7 @@ class RedisTopList(AbstractTopList[_EntryKey]):
 
     @__observe()
     @helpers.retry(max_tries=3, stack_id=f"{__name__}:incr")
-    async def incr(  # pyright: ignore [reportIncompatibleMethodOverride]
-        self, key: _EntryKey, ts_ms: int
-    ):
+    async def incr(self, key: _EntryKey, ts_ms: int):
         await self.__reap(ts_ms)
         ts_secs = int(ts_ms / 1000)
         bucket_key = ts_secs - ts_secs % self.bucket_len_sec

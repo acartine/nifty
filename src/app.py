@@ -2,7 +2,12 @@ import logging
 from pathlib import Path
 from uuid import uuid1
 
-from flask import Flask, jsonify, redirect, send_from_directory
+from flask import (
+    Flask,
+    jsonify,
+    redirect,
+    send_from_directory,  # pyright: ignore [reportUnknownVariableType]
+)
 from flask_pydantic import validate
 from pydantic import BaseModel, HttpUrl
 
