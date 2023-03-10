@@ -18,10 +18,7 @@
   },
 
   "strict": [
-    "src/nifty_common/**",
-    "src/nifty/**",
-    "src/nifty_worker/trend/toplist/async**",
-    "src/util/**"
+    "src/**"
   ],
   "stubPath": "typings",
 

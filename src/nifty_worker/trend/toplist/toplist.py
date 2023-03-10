@@ -1,10 +1,13 @@
+# fixes stubs like redis that use generics when the code does not
+from __future__ import annotations
+
 import abc
 import functools
 import logging
 import math
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, List, Optional, ParamSpec, Set, TypeVar, cast
+from typing import Any, Callable, Generic, List, Optional, Set, TypeVar, cast
 
 from redis.client import Redis
 
@@ -43,7 +46,7 @@ class RedisTopList(AbstractTopList[_EntryKey]):
         self,
         root_key: str,
         max_age_sec: int,
-        redis: Redis,  # pyright: ignore [reportUnknownParameterType]
+        redis: Redis[str],
         ctor: Callable[[Any], _EntryKey],
         listener: Callable[[Set[_EntryKey], Set[_EntryKey]], None],
         bucket_len_sec: Optional[int] = 1,
@@ -52,7 +55,7 @@ class RedisTopList(AbstractTopList[_EntryKey]):
         self.redis = redis
         self.ctor = ctor
         self.listener = listener
-        self.cache = set()
+        self.cache: Set[_EntryKey] = set()
 
         # SortedSet { key: link_id, score: hits }
         self.toplist_set = root_key
@@ -95,7 +98,7 @@ class RedisTopList(AbstractTopList[_EntryKey]):
                     self.toplist_set, [self.toplist_set, oldest_key]
                 ).zremrangebyscore(self.toplist_set, -math.inf, 1).delete(
                     oldest_key
-                ).rpop(
+                ).rpop(  # pyright: ignore [reportUnknownMemberType]
                     self.buckets_list
                 ).execute()
 
@@ -117,7 +120,9 @@ class RedisTopList(AbstractTopList[_EntryKey]):
         return [Entry(self.ctor(k), v) for k, v in foo]
 
     @staticmethod
-    def _observe() -> Callable[[_OriginalFunc], _OriginalFunc]:
+    def _observe() -> (
+        Callable[[_OriginalFunc[_OriginalRet]], _OriginalFunc[_OriginalRet]]
+    ):
         def decorator(func: _OriginalFunc[_OriginalRet]) -> _OriginalFunc[_OriginalRet]:
             @functools.wraps(func)
             def wrapper(self: RedisTopList[_EntryKey], *args: Any, **kwargs: Any):

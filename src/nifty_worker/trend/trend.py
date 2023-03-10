@@ -7,7 +7,7 @@ from nifty_common.asyncio import redis_helpers
 from nifty_common.types import Action, ActionType, Channel, Key, TrendEvent
 from nifty_worker.common.asyncio.worker import NiftyWorker
 from nifty_worker.common.types import ClaimNamespace
-from nifty_worker.trend.toplist.async_toplist import AbstractTopList, RedisTopList
+from .toplist.asyncio.toplist import AbstractTopList, RedisTopList
 
 
 # redis doesn't really have great datastructures for this
@@ -70,7 +70,7 @@ class TrendWorker(NiftyWorker[Action]):
     def filter(self, msg: Action) -> bool:
         return msg.type == ActionType.get
 
-    async def on_event(self, _channel: Channel, msg: Action):
+    async def on_event(self, channel: Channel, msg: Action):
         await self.toplist().incr(msg.link_id, min(msg.at, timestamp_ms()))
 
     async def on_yield(self):
