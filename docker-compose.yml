@@ -127,7 +127,7 @@ services:
     image: nginx:1.23.3
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./src/static:/app/static
+      - ./nifty/service/static:/app/static
     ports:
       - "8080:80"
     depends_on:
