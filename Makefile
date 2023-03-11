@@ -32,7 +32,7 @@ db-wipe:
 	docker volume rm -f nifty_postgres-data
 
 db-wipe-soft:
-	pipenv run python -m util.db.clean
+	pipenv run python -m nifty.util.db.clean
 
 docker-build: py-clean
 	docker build -t acartine/nifty:v1 ${ARGS} .
@@ -89,11 +89,14 @@ test: stack-stop db-wipe stack-run db-apply-local
 	e=$$?; \
 	popd; \
 	make stack-stop; \
-	exit $$e
+	exit $$e
 
-test-integration: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
-	PYTHONPATH=. APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local pipenv run pytest tests_integration/all.py; \
-        e=$$?; \
+test-integration-raw: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
+	PYTHONPATH=. APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local pipenv run pytest tests_integration/all.py
+
+test-integration: 
+	make test-integration-raw; \	
+	e=$$?; \
 	make datastore-stop; \
         exit $$e
 
@@ -115,10 +118,10 @@ py-lint-check:
 py-sanity: py-lint-check py-type-check
 py-sanity-full: py-sanity-fast test-integration
 
-sanity-full: py-sanity stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local stack-run
-	APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local pipenv run pytest tests/integration/all.py; \
-        e=$$?; \
+sanity-full: test-integration-raw
 	make db-wipe-soft; \
+	e=$$?; \
+	make stack-base-run; \
 	e=$$?; \
 	pushd ui && yarn cypress run ${ARGS}; \
 	e=$$?; \
