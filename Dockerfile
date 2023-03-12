@@ -12,4 +12,4 @@ COPY /nifty/common/ /app/nifty/common
 COPY /nifty/service /app/nifty/service
 
 
-CMD ["gunicorn", "-b", "0.0.0.0:5000", "nifty.service.app:app"]
+ENTRYPOINT ["gunicorn", "-b", "0.0.0.0:5000", "nifty.service.app:app"]

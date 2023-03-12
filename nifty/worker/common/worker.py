@@ -21,7 +21,7 @@ class BaseNiftyWorker(Generic[T_Worker], ABC):
     """
 
     def __init__(self):
-        self.running = False
+        self.__running = False
 
     @abstractmethod
     def unpack(self, msg: Dict[str, Any]) -> T_Worker:
@@ -29,6 +29,12 @@ class BaseNiftyWorker(Generic[T_Worker], ABC):
 
     def filter(self, _msg: T_Worker) -> bool:
         return True
+
+    def is_running(self) -> bool:
+        return self.__running
+
+    def set_running(self, running: bool):
+        self.__running = running
 
 
 class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
@@ -68,6 +74,7 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
                 self.on_event(channel, event)
 
     def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
+        self.set_running(True)
         if listen_interval is None or listen_interval <= 0:
             raise Exception("You must set listen_interval > 0")
         self.before_start()
@@ -76,8 +83,7 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
         )  # docs say to use diff reais for read, not sure this is true
         pubsub = redis.pubsub(ignore_subscribe_messages=True)
         pubsub.subscribe(src_channel)
-        self.running = True
-        while self.running:
+        while self.is_running():
             msg: Dict[
                 str, Any
             ] = pubsub.get_message(  # pyright: ignore [reportGeneralTypeIssues]

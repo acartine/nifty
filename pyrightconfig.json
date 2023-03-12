@@ -5,10 +5,12 @@
   
   "exclude": [
     "**/node_modules",
-    "**/__pycache__"
+    "**/__pycache__",
+    "tests_integration/**"
   ],
 
   "ignore": [
+    "tests_integration/**"
   ],
 
   "defineConstant": {

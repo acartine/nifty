@@ -103,3 +103,17 @@ def gint(section: str, key: str) -> int:
 def gint_fb(section: str, key: str, fallback: int) -> int:
     val = g_opt(section, key)
     return int(val) if val else fallback
+
+
+def gfloat(section: str, key: str) -> float:
+    """
+    Fail fast int getter
+
+
+    """
+    return float(g(section, key))
+
+
+def gfloat_fb(section: str, key: str, fallback: float) -> float:
+    val = g_opt(section, key)
+    return float(val) if val else fallback

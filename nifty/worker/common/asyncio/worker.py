@@ -1,11 +1,13 @@
 # fixes stubs like redis that use generics when the code does not
 from __future__ import annotations
+from asyncio import CancelledError
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
-
-from redis.asyncio.client import Redis
+from typing import Any, Callable, Dict, Optional
+import aiorun
+from redis.asyncio.client import Redis, PubSub
+from nifty.common import log
 
 from nifty.common.asyncio import redis_helpers
 from nifty.common.types import Channel, RedisType
@@ -55,21 +57,11 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
             if claimed:
                 await self.on_event(channel, event)
 
-    async def run(self, *, src_channel: Channel, listen_interval: Optional[int] = 5):
-        if listen_interval is None or listen_interval <= 0:
-            raise Exception("You must set listen_interval > 0")
-        await self.before_start()
-        redis = redis_helpers.get_redis(
-            RedisType.STD
-        )  # STD does not have LRU memory limit
-        async with redis.pubsub(  # pyright: ignore [reportUnknownMemberType]
-            ignore_subscribe_messages=True
-        ) as pubsub:
-            await pubsub.subscribe(  # pyright: ignore [reportUnknownMemberType]
-                src_channel
-            )
-            self.running = True
-            while self.running:
+    async def __listen(
+        self, pubsub: PubSub, src_channel: Channel, listen_interval: float
+    ):
+        try:
+            while self.is_running():
                 msg: Dict[
                     str, Any
                 ] = await pubsub.get_message(  # pyright: ignore [reportUnknownMemberType]
@@ -77,3 +69,35 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
                     timeout=listen_interval if listen_interval else 5,
                 )
                 await self.__handle(src_channel, msg)
+        except CancelledError:
+            logging.info("Cancelled")
+            self.set_running(False)
+
+    async def run(
+        self, *, src_channel: Channel, listen_interval: Optional[float] = 0.5
+    ):
+        try:
+            if listen_interval is None or listen_interval <= 0:
+                raise Exception("You must set listen_interval > 0")
+            await self.before_start()
+            redis = redis_helpers.get_redis(
+                RedisType.STD
+            )  # STD does not have LRU memory limit
+            async with redis.pubsub(  # pyright: ignore [reportUnknownMemberType]
+                ignore_subscribe_messages=True
+            ) as pubsub:
+                await pubsub.subscribe(  # pyright: ignore [reportUnknownMemberType]
+                    src_channel
+                )
+                self.set_running(True)
+                await self.__listen(pubsub, src_channel, listen_interval)
+        except CancelledError:
+            logging.info("Cancelled")
+
+
+def start(worker_ctor: Callable[[], NiftyWorker[T_Worker]], src_channel: Channel):
+    """
+    Starts the worker
+    """
+    log.log_init()
+    aiorun.run(worker_ctor().run(src_channel=src_channel))
