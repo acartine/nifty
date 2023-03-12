@@ -100,8 +100,8 @@ test-integration:
 	make datastore-stop; \
         exit $$e
 
-test-unit: py-clean
-	pipenv run pytest tests/unit
+test-unit: py-clean py-lint-check py-type-check
+	pipenv run python -m unittest discover
 
 test-ui-dev:
 	pushd ui && yarn run cypress open --env host='localhost:3000'

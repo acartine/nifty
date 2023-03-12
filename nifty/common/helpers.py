@@ -8,6 +8,14 @@ from typing import Any, Callable, Optional, TypeVar
 
 
 def timestamp_ms(*, datetime_ts: Optional[datetime] = None) -> int:
+    """
+    Return current timestamp in milliseconds
+
+    mainly just to make sure we're using the same timestamp everywhere
+
+    param datetime_ts: if provided, use this datetime instead of current time
+    return: timestamp in milliseconds
+    """
     if datetime_ts is not None:
         ts = datetime_ts.timestamp()
     else:
@@ -24,6 +32,12 @@ def retry(
 ) -> Callable[[_OrignalFunc[_T]], _OrignalFunc[_T]]:
     """
     Create callable decorator to retry a function
+
+    each delay is the previous delay * attempt number
+
+    param max_tries: number of times to retry
+    param stack_id: stack id to use for logging
+    first_delay: delay in seconds before first retry
     """
 
     def decorator(func: _OrignalFunc[_T]) -> _OrignalFunc[_T]:
@@ -38,10 +52,11 @@ def retry(
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    logging.getLogger(stack_id).debug(e)
                     if attempt >= max_tries - 1:
                         ex = e
                         break
+                    else:
+                        logging.getLogger(stack_id).debug(e)
 
             logging.getLogger(stack_id).error(f"Exception limit '{max_tries}' exceeded")
             raise ex if ex else Exception(f"Exception limit '{max_tries}' exceeded")
@@ -55,6 +70,12 @@ T = TypeVar("T")
 
 
 def opt_or(optional: Optional[T], fallback: T) -> T:
+    """
+    Return optional if not None, otherwise fallback
+    param optional: optional value
+    param fallback: fallback value
+    return: optional if not None, otherwise fallback
+    """
     return optional if optional is not None else fallback
 
 
@@ -62,14 +83,30 @@ T_Intable = TypeVar("T_Intable", bound=str | float | bytes, covariant=True)
 
 
 def optint_or_none(optional: Optional[T_Intable]) -> Optional[int]:
+    """
+    Return optional as int if not None, otherwise None
+    param optional: optional value
+    return: optional as int if not None, otherwise None
+    """
     return int(optional) if optional is not None else None
 
 
 def none_throws(optional: Optional[T], msg: str) -> T:
+    """
+    Return optional if not None, otherwise raise exception
+    param optional: optional value
+    param msg: exception message
+    return: optional if not None, otherwise raise exception"""
     if optional is None:
         raise Exception(msg)
     return optional
 
 
 def noneint_throws(optional: Optional[T_Intable], key: str) -> int:
+    """
+    Return optional as int if not None, otherwise raise exception
+    param optional: optional value
+    param key: key name for exception message
+    return: optional as int if not None, otherwise raise exception
+    """
     return none_throws(optint_or_none(optional), f"Unset value for {key}")
