@@ -95,7 +95,7 @@ test-integration-raw: stack-stop db-wipe datastore-run db-apply-local db-reapply
 	PYTHONPATH=. APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local pipenv run pytest tests_integration/all.py
 
 test-integration: 
-	make test-integration-raw; \	
+	make test-integration-raw; \
 	e=$$?; \
 	make datastore-stop; \
         exit $$e
@@ -110,10 +110,10 @@ py-type-check:
 	pipenv run pyright
 
 py-lint:
-	pipenv run black nifty -t py310
+	pipenv run black nifty -t py311
 
 py-lint-check:
-	pipenv run black nifty -t py310 --check
+	pipenv run black nifty -t py311 --check
 
 py-sanity: py-lint-check py-type-check
 py-sanity-full: py-sanity-fast test-integration

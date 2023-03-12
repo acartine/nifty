@@ -60,18 +60,19 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
     async def __listen(
         self, pubsub: PubSub, src_channel: Channel, listen_interval: float
     ):
-        try:
-            while self.is_running():
-                msg: Dict[
-                    str, Any
-                ] = await pubsub.get_message(  # pyright: ignore [reportUnknownMemberType]
-                    ignore_subscribe_messages=True,
-                    timeout=listen_interval if listen_interval else 5,
-                )
+        while True:
+            msg: Dict[
+                str, Any
+            ] = await pubsub.get_message(  # pyright: ignore [reportUnknownMemberType]
+                ignore_subscribe_messages=True,
+                timeout=listen_interval if listen_interval else 5,
+            )
+            try:
+                # TODO probably should do something smater here if we've already pulled the message
                 await self.__handle(src_channel, msg)
-        except CancelledError:
-            logging.info("Cancelled")
-            self.set_running(False)
+            except CancelledError:
+                logging.info("Cancelled")
+                break
 
     async def run(
         self, *, src_channel: Channel, listen_interval: Optional[float] = 0.5
