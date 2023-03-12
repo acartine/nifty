@@ -32,7 +32,7 @@ db-wipe:
 	docker volume rm -f nifty_postgres-data
 
 db-wipe-soft:
-	PYTHONPATH=src pipenv run python -m util.db.clean
+	pipenv run python -m nifty.util.db.clean
 
 docker-build: py-clean
 	docker build -t acartine/nifty:v1 ${ARGS} .
@@ -50,7 +50,7 @@ docker-stop:
 	docker container stop nifty && docker container rm nifty
 
 prepare: py-clean 
-	rm -rf src/static && cp -r ui/build src/static
+	rm -rf nifty/service/static && cp -r ui/build nifty/service/static
 
 py-build:
 	pipenv install
@@ -59,7 +59,7 @@ py-clean:
 	pipenv run pyclean .
 
 run-app-local:
-	APP_CONTEXT_CFG=nifty PRIMARY_CFG=local PYTHONPATH=src pipenv run flask --debug run
+	APP_CONTEXT_CFG=nifty PRIMARY_CFG=local pipenv run flask --debug --app nifty.service.app:app run
 
 run-dev: datastore-run run-app-local
 
@@ -67,10 +67,10 @@ run-ui-dev:
 	pushd ui && yarn start
 
 run-trend-link-local:
-	APP_CONTEXT_CFG=trend_link PYTHONPATH=src pipenv run python -m nifty_worker.trend_link
+	APP_CONTEXT_CFG=trend_link pipenv run python -m nifty.worker.trend_link
 
 run-trend-local:
-	APP_CONTEXT_CFG=trend PYTHONPATH=src pipenv run python -m nifty_worker.trend
+	APP_CONTEXT_CFG=trend pipenv run python -m nifty.worker.trend
 
 stack-run: docker-build trend-docker-build trend-link-docker-build
 	docker compose --profile all up --wait -d
@@ -91,14 +91,17 @@ test: stack-stop db-wipe stack-run db-apply-local
 	make stack-stop; \
 	exit $$e
 
-test-integration: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
-	APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
-        e=$$?; \
+test-integration-raw: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
+	PYTHONPATH=. APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local pipenv run pytest tests_integration/all.py
+
+test-integration: 
+	make test-integration-raw; \	
+	e=$$?; \
 	make datastore-stop; \
         exit $$e
 
-test-unit: py-clean
-	PYTHONPATH=src pipenv run pytest tests/unit
+test-unit: py-clean py-lint-check py-type-check
+	pipenv run python -m unittest discover
 
 test-ui-dev:
 	pushd ui && yarn run cypress open --env host='localhost:3000'
@@ -107,18 +110,18 @@ py-type-check:
 	pipenv run pyright
 
 py-lint:
-	pipenv run black src -t py310
+	pipenv run black nifty -t py310
 
 py-lint-check:
-	pipenv run black src -t py310 --check
+	pipenv run black nifty -t py310 --check
 
 py-sanity: py-lint-check py-type-check
 py-sanity-full: py-sanity-fast test-integration
 
-sanity-full: py-sanity stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local stack-run
-	APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local PYTHONPATH=src pipenv run pytest tests/integration/all.py; \
-        e=$$?; \
+sanity-full: test-integration-raw
 	make db-wipe-soft; \
+	e=$$?; \
+	make stack-base-run; \
 	e=$$?; \
 	pushd ui && yarn cypress run ${ARGS}; \
 	e=$$?; \

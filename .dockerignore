@@ -1,0 +1,15 @@
+.idea/**
+.pyteset_cache/**
+.vscode/**
+data/**
+db/**
+test*/**
+typings/**
+yoyo.ini
+*.md
+**/.gitignore
+utils/**
+ui/**
+**/node_modules/**
+**/cypress/**
+

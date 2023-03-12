@@ -1,16 +1,16 @@
 {
   "include": [
-    "src"
+    "nifty"
   ],
   
   "exclude": [
     "**/node_modules",
     "**/__pycache__",
-    "src/experimental",
-    "src/typestubs"
+    "tests_integration/**"
   ],
 
   "ignore": [
+    "tests_integration/**"
   ],
 
   "defineConstant": {
@@ -18,7 +18,7 @@
   },
 
   "strict": [
-    "src/**"
+    "nifty/**"
   ],
   "stubPath": "typings",
 
