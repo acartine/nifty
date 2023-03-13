@@ -6,6 +6,7 @@ from typing import Any, Dict
 # from selenium import webdriver
 # from nifty.common.helpers import timestamp_ms
 from nifty.common.types import Channel, TrendLinkEvent
+from nifty.worker.common.asyncio import worker
 from nifty.worker.common.asyncio.worker import NiftyWorker
 from nifty.worker.common.types import ClaimNamespace
 
@@ -54,3 +55,7 @@ class ImageBuilderWorker(NiftyWorker[TrendLinkEvent]):
 
     def unpack(self, msg: Dict[str, Any]) -> TrendLinkEvent:
         return TrendLinkEvent.parse_raw(msg["data"])
+
+
+if __name__ == "__main__":
+    worker.start(lambda: ImageBuilderWorker(), src_channel=Channel.image_builder)
