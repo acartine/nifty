@@ -4,6 +4,7 @@ from uuid import uuid1
 
 from nifty.common import helpers
 from nifty.common.types import Channel, TrendEvent, TrendLinkEvent, UpstreamSource
+from nifty.worker.common.asyncio import worker
 from nifty.worker.common.asyncio.worker import NiftyWorker
 from nifty.worker.common.types import ClaimNamespace
 
@@ -31,3 +32,7 @@ class TrendLinkWorker(NiftyWorker[TrendEvent]):
 
     def unpack(self, msg: Dict[str, Any]) -> TrendEvent:
         return TrendEvent.parse_raw(msg["data"])
+
+
+if __name__ == "__main__":
+    worker.start(lambda: TrendLinkWorker(), Channel.trend)

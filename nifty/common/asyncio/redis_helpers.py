@@ -17,7 +17,6 @@ TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
 def get_redis(
     redis_type: RedisType,
 ) -> Redis[str]:
-    print(redis_type.cfg_key)
     return Redis(
         host=cfg.g(redis_type.cfg_key, "host"),
         username=cfg.g(redis_type.cfg_key, "user"),

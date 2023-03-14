@@ -1,4 +1,4 @@
-FROM python:3.10 as common
+FROM python:3.11 as common
 COPY /nifty/worker/requirements.txt /app/requirements.txt
 WORKDIR /app
 RUN python -m pip install -r requirements.txt

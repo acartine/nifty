@@ -1,14 +1,15 @@
 import logging
 from typing import Any, Dict, Optional, Set
 from uuid import uuid1
+from nifty.common import cfg
 
 from nifty.common.helpers import none_throws, timestamp_ms
 from nifty.common.asyncio import redis_helpers
 from nifty.common.types import Action, ActionType, Channel, Key, TrendEvent
-from nifty.worker.common.asyncio.worker import NiftyWorker
-from nifty.worker.common.types import ClaimNamespace
+from .common.asyncio.worker import NiftyWorker
+from .common.types import ClaimNamespace
 from .toplist.asyncio.toplist import AbstractTopList, RedisTopList
-
+from .common.asyncio import worker
 
 # redis doesn't really have great datastructures for this
 # time series would have been best, but it doesn't support
@@ -77,3 +78,16 @@ class TrendWorker(NiftyWorker[Action]):
         now = timestamp_ms()
         tl = self.toplist()
         await tl.reap(now)
+
+
+TREND_CONFIG_KEY = "trend"
+
+if __name__ == "__main__":
+    worker.start(
+        lambda: TrendWorker(
+            trend_size=cfg.gint(TREND_CONFIG_KEY, "size"),
+            toplist_interval_sec=cfg.gint(TREND_CONFIG_KEY, "toplist_interval_sec"),
+            toplist_bucket_len_sec=cfg.gint(TREND_CONFIG_KEY, "toplist_bucket_len_sec"),
+        ),
+        src_channel=Channel.action,
+    )

@@ -9,7 +9,7 @@ flask-pydantic = "~=0.11.0"
 pydantic = "~=1.10.4"
 redis = "~=4.5.1"
 gunicorn = "~=20.1.0"
-psycopg = {version = "~=3.1.6", extras = ["pool"]}
+psycopg = {version = "~=3.1.6", extras = ["binary","pool"]}
 selenium = "*"
 pillow = "*"
 aiorun = "*"
@@ -25,7 +25,7 @@ black = "*"
 types-redis = "*"
 
 [requires]
-python_version = "~=3.10.6"
+python_version = "3.11.2"
 
 [scripts]
 load-links = "python utils/client/client.py data/seeds.csv"

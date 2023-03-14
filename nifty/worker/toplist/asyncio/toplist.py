@@ -98,7 +98,6 @@ class RedisTopList(AbstractTopList[_EntryKey]):
                     return
 
                 oldest_sec = int(oldest_sec_str)
-                logging.debug(f"ts={ts_ms} oldest_sec={oldest_sec}")
                 if int(ts_ms / 1000) - oldest_sec < self.max_age:
                     return
 
