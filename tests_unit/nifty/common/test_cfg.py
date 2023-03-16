@@ -56,6 +56,7 @@ class TestCfg(unittest.TestCase):
         self.mockdict = {}
         self.__patch("os.path.expandvars", side_effect=expandvars_side_effect)
         self.__patch("builtins.open", side_effect=open_side_effect, mock=mock_open())
+        self.__patch("builtins.print")
 
     def tearDown(self) -> None:
         cfg.destroy()

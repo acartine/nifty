@@ -4,6 +4,14 @@ from nifty.common import context
 
 
 class TestContext(unittest.TestCase):
+    def setUp(self) -> None:
+        patcher = patch("builtins.print")
+        self.mock_print = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def tearDown(self) -> None:
+        self.mock_print = None
+
     @patch.dict("os.environ", {"APP_CONTEXT_CFG": "NIFTY", "PRIMARY_CFG": "LOCAL"})
     def test_get(self):
         actual = context.get()
