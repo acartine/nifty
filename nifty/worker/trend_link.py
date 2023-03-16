@@ -2,7 +2,7 @@ import logging
 from typing import Any, Dict
 from uuid import uuid1
 
-from nifty.common import helpers
+from nifty.common import cfg, context, helpers
 from nifty.common.types import Channel, TrendEvent, TrendLinkEvent, UpstreamSource
 from nifty.worker.common.asyncio import worker
 from nifty.worker.common.asyncio.worker import NiftyWorker
@@ -35,4 +35,5 @@ class TrendLinkWorker(NiftyWorker[TrendEvent]):
 
 
 if __name__ == "__main__":
+    cfg.init(**context.get().dict())
     worker.start(lambda: TrendLinkWorker(), Channel.trend)

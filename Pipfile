@@ -23,6 +23,7 @@ scrapy = "~=2.8.0"
 pyright = "*"
 black = "*"
 types-redis = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.11.2"

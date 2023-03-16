@@ -15,12 +15,12 @@ from .base62 import base62_encode
 from .store import store
 from nifty.common.types import Link
 from nifty.common.helpers import timestamp_ms
-from nifty.common.log import log_init
+from nifty.common import log, cfg, context
 from nifty.common.types import Action, ActionType, Channel
 
-# TODO set up blueprints
 
-log_init()
+cfg.init(**context.get().dict())
+log.log_init()
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder=None)

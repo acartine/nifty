@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-trend-local stack-run stack-stop test test-integration test-ui-dev
+.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-trend-local stack-run stack-stop test py-test-integration test-ui-dev
 	
 build-ui:
 	pushd ui && yarn install && rm -rf build && yarn build && popd 
@@ -91,17 +91,20 @@ test: stack-stop db-wipe stack-run db-apply-local
 	make stack-stop; \
 	exit $$e
 
-test-integration-raw: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
+py-test-integration-raw: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
 	PYTHONPATH=. APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local pipenv run pytest tests_integration/all.py
 
-test-integration: 
-	make test-integration-raw; \
+py-test-integration: 
+	make py-test-integration-raw; \
 	e=$$?; \
 	make datastore-stop; \
         exit $$e
 
-test-unit: py-clean py-lint-check py-type-check
+py-test-unit: py-clean py-lint-check py-type-check
 	pipenv run python -m unittest discover
+
+py-coverage: py-clean py-lint-check py-type-check
+	pipenv run coverage run -m unittest discover
 
 test-ui-dev:
 	pushd ui && yarn run cypress open --env host='localhost:3000'
@@ -116,9 +119,9 @@ py-lint-check:
 	pipenv run black nifty -t py311 --check
 
 py-sanity: py-lint-check py-type-check
-py-sanity-full: py-sanity-fast test-integration
+py-sanity-full: py-sanity-fast py-test-integration
 
-sanity-full: test-integration-raw
+sanity-full: py-test-integration-raw
 	make db-wipe-soft; \
 	e=$$?; \
 	make stack-base-run; \

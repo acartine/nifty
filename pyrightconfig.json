@@ -10,7 +10,8 @@
   ],
 
   "ignore": [
-    "tests_integration/**"
+    "tests_integration/**",
+    ".coveragerc"
   ],
 
   "defineConstant": {

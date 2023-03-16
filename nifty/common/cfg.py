@@ -9,6 +9,9 @@ _Section: TypeAlias = Mapping[str, str]
 _Parser: TypeAlias = MutableMapping[str, _Section]
 
 
+CFG_FILE_PATH = "config"
+
+
 class _EnvInterpolation(configparser.BasicInterpolation):
     """Interpolation which expands environment variables in values."""
 
@@ -19,49 +22,60 @@ class _EnvInterpolation(configparser.BasicInterpolation):
         return os.path.expandvars(value)
 
 
-CFG_FILE_PATH = "config"
-APP_NAME_CFG_KEY = "APP_CONTEXT_CFG"
-
-cfg = configparser.ConfigParser(interpolation=_EnvInterpolation())
+_singleton: Optional[configparser.ConfigParser] = None
 
 
-def load_config(l_cfg: configparser.ConfigParser, prefix: Optional[str] = None):
+def _cfg() -> configparser.ConfigParser:
+    return none_throws(_singleton, "cfg not initialized")
+
+
+def _load_config(l_cfg: configparser.ConfigParser, prefix: Optional[str] = None):
     cfg_file = f"{prefix}_config.ini" if prefix else "config.ini"
     cfg_file = f"{CFG_FILE_PATH}/{cfg_file}"
     print(f"Loading from '{cfg_file}'...")
     l_cfg.read_file(open(cfg_file))
 
 
-load_config(cfg)
+def init(*, app_name: AppContextName, primary_cfg: Optional[str] = None):
+    """
+    Initialize the config, loading the appropriate config files
+    Will first look for config.ini, then config/<app_name>_config.ini, then config/<primary_cfg>_config.ini
 
-app_name: Optional[AppContextName] = None
-try:
-    app_context_cfg = none_throws(
-        os.environ.get(APP_NAME_CFG_KEY), f"missing APP_CONTEXT_CFG"
-    )
-    app_name = AppContextName[app_context_cfg.lower()]
-except:
-    raise Exception(
-        "APP_CONTEXT_CONFIG must be set to one of"
-        f" {[e.name for e in AppContextName]} so we know what configs to load.  "
-        "Environment supplied '{os.environ.get(APP_NAME_CFG_KEY)}'"
-    )
-load_config(cfg, app_name.value)
+    The config files are loaded in that order, so the last one wins.  The first two are required, the last one is optional.
 
-# LOCAL, DEV, PROD, etc. etc.
-primary_cfg = os.environ.get("PRIMARY_CFG")
-if primary_cfg is not None:
-    load_config(cfg, primary_cfg.lower())
-else:
-    print(
-        "PRIMARY_CFG not set - to override configs, set PRIMARY_CFG=xxxx and then "
-        "have config/xxxx_config.ini in place and it will be loaded!"
-    )
+    The idea is that common configs are in config.ini, then app specific configs are in <app_name>_config.ini,
+    and then finally you can override them with a <primary_cfg>_config.ini
 
-for s in cfg.sections():
-    sd = {}
-    for k, v in cfg[s].items():
-        print(f"{s} : {k} : {v if k.upper() != 'PWD' else '****'}")
+    :param app_name: the app name, used to load the appropriate config file
+    :param primary_cfg: the primary config, used to load the appropriate config file for that environment
+    """
+    global _singleton
+    if _singleton is not None:
+        raise Exception("cfg already initialized")
+
+    cfg = configparser.ConfigParser(interpolation=_EnvInterpolation())
+    _load_config(cfg)
+    _load_config(cfg, app_name.value)
+    if primary_cfg is not None:
+        _load_config(cfg, primary_cfg.lower())
+
+    for s in cfg.sections():
+        for k, v in cfg[s].items():
+            print(f"{s} : {k} : {v if k.upper() != 'PWD' else '****'}")
+
+    _singleton = cfg
+
+
+def destroy():
+    """
+    Destroy the config.  Useful for testing.
+
+    Other potentional uses are if you want to reload the config, or if you want to
+    prevent config access after the application has been bootstrapped.
+    """
+    global _singleton
+    _singleton = None
+
 
 T = TypeVar("T")
 
@@ -71,7 +85,7 @@ def g(section: str, key: str) -> str:
     simple get, fail fast
     """
 
-    return cfg[section][key]
+    return _cfg()[section][key]
 
 
 def g_opt(section: str, key: str) -> Optional[str]:
@@ -79,7 +93,7 @@ def g_opt(section: str, key: str) -> Optional[str]:
     simple get, return None if not found
     """
 
-    return cfg[section].get(key)
+    return _cfg()[section].get(key)
 
 
 def g_fb(section: str, key: str, fallback: str) -> str:
