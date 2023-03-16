@@ -4,6 +4,7 @@ from typing import Mapping, MutableMapping, Optional, TypeAlias, TypeVar
 from .helpers import none_throws
 
 from .types import AppContextName
+from . import context
 
 _Section: TypeAlias = Mapping[str, str]
 _Parser: TypeAlias = MutableMapping[str, _Section]
@@ -26,7 +27,10 @@ _singleton: Optional[configparser.ConfigParser] = None
 
 
 def _cfg() -> configparser.ConfigParser:
-    return none_throws(_singleton, "cfg not initialized")
+    global _singleton
+    if _singleton is None:
+        init(**context.get().dict())
+    return none_throws(_singleton, "cfg initialize failed")
 
 
 def _load_config(l_cfg: configparser.ConfigParser, prefix: Optional[str] = None):
@@ -45,6 +49,8 @@ def init(*, app_name: AppContextName, primary_cfg: Optional[str] = None):
 
     The idea is that common configs are in config.ini, then app specific configs are in <app_name>_config.ini,
     and then finally you can override them with a <primary_cfg>_config.ini
+
+    You do not need to call this exp
 
     :param app_name: the app name, used to load the appropriate config file
     :param primary_cfg: the primary config, used to load the appropriate config file for that environment

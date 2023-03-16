@@ -100,7 +100,7 @@ py-test-integration:
 	make datastore-stop; \
         exit $$e
 
-py-test-unit: py-clean py-lint-check py-type-check
+py-test-unit: py-clean py-sanity
 	pipenv run python -m unittest discover
 
 py-coverage: py-clean py-lint-check py-type-check
@@ -119,7 +119,7 @@ py-lint-check:
 	pipenv run black nifty -t py311 --check
 
 py-sanity: py-lint-check py-type-check
-py-sanity-full: py-sanity-fast py-test-integration
+py-sanity-full: py-sanity py-test-integration
 
 sanity-full: py-test-integration-raw
 	make db-wipe-soft; \

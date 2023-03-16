@@ -15,11 +15,9 @@ from .base62 import base62_encode
 from .store import store
 from nifty.common.types import Link
 from nifty.common.helpers import timestamp_ms
-from nifty.common import log, cfg, context
+from nifty.common import log
 from nifty.common.types import Action, ActionType, Channel
 
-
-cfg.init(**context.get().dict())
 log.log_init()
 
 logger = logging.getLogger(__name__)

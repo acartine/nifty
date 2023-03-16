@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, Optional, Set
 from uuid import uuid1
-from nifty.common import cfg, context
+from nifty.common import cfg
 
 from nifty.common.helpers import none_throws, timestamp_ms
 from nifty.common.asyncio import redis_helpers
@@ -83,7 +83,6 @@ class TrendWorker(NiftyWorker[Action]):
 TREND_CONFIG_KEY = "trend"
 
 if __name__ == "__main__":
-    cfg.init(**context.get().dict())
     worker.start(
         lambda: TrendWorker(
             trend_size=cfg.gint(TREND_CONFIG_KEY, "size"),

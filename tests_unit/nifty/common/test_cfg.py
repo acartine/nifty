@@ -3,6 +3,7 @@ from typing import Any
 import unittest
 from unittest.mock import Mock, mock_open, patch
 from nifty.common import cfg
+from nifty.common.context import AppContext
 from nifty.common.types import AppContextName
 
 
@@ -94,6 +95,17 @@ class TestCfg(unittest.TestCase):
         self.mockdict["builtins.open"].side_effect = FileNotFoundError()
         with self.assertRaises(Exception):
             cfg.init(app_name=AppContextName.nifty, primary_cfg="local")
+
+    def test_implicit_init(
+        self,
+    ):
+        with patch("nifty.common.context.get") as mock_get:
+            mock_get.return_value = AppContext(
+                app_name=AppContextName.nifty, primary_cfg="local"
+            )
+            self.assertEqual(cfg.gint("db", "port"), 456)
+            self.assertEqual(cfg.gfloat("db", "backoff"), 0.6)
+            self.assertEqual(cfg.g("db", "user"), "test")
 
     def test_get_operations(
         self,
