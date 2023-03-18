@@ -91,11 +91,13 @@ test: stack-stop db-wipe stack-run db-apply-local
 	make stack-stop; \
 	exit $$e
 
-py-test-integration-raw: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local
+py-test-integration-raw:
 	PYTHONPATH=. APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local pipenv run pytest tests_integration/all.py
 
-py-test-integration: 
-	make py-test-integration-raw; \
+py-test-integration: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local py-test-integration-raw
+
+py-test-integration-full: 
+	make py-test-integration; \
 	e=$$?; \
 	make datastore-stop; \
         exit $$e

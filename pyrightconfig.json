@@ -5,12 +5,10 @@
   
   "exclude": [
     "**/node_modules",
-    "**/__pycache__",
-    "tests_integration/**"
+    "**/__pycache__"
   ],
 
   "ignore": [
-    "tests_integration/**",
     ".coveragerc"
   ],
 
