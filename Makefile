@@ -29,6 +29,7 @@ db-rollback-all-local:
 	PG_HOST=localhost PG_ADMIN_PWD=mypassword make db-rollback-all
 
 db-wipe:
+	bin/dc.sh down worker web store
 	docker volume rm -f nifty_postgres-data
 
 db-wipe-soft:
@@ -82,7 +83,7 @@ py-test-integration-raw:
 
 py-test-integration: 
 	bin/dc.sh up store && make db-apply-local && make db-reapply-all-local \
-&& bin/dc.sh up worker && py-test-integration-raw
+&& bin/dc.sh up worker && make py-test-integration-raw
 
 py-test-integration-full: 
 	make py-test-integration; \
@@ -109,7 +110,7 @@ py-lint-check:
 	pipenv run black nifty -t py311 --check
 
 py-sanity: py-lint-check py-type-check
-py-sanity-full: py-test-unit py-test-integration
+py-sanity-full: py-test-unit db-wipe py-test-integration
 
 sanity-full: py-sanity-full db-wipe-soft
 	bin/dc.sh up web && pushd ui && yarn cypress run ${ARGS}; \
