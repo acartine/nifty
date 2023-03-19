@@ -18,7 +18,7 @@ from nifty.common.helpers import timestamp_ms
 from nifty.common import log
 from nifty.common.types import Action, ActionType, Channel
 
-log.log_init()
+log.init()
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder=None)

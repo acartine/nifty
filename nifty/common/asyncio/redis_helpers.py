@@ -5,7 +5,7 @@ import logging
 from typing import Optional, Type, TypeVar
 
 from pydantic import BaseModel
-from redis.asyncio.client import Redis
+from redis.asyncio import client
 
 from nifty.common import cfg
 from nifty.common.helpers import none_throws, noneint_throws, optint_or_none
@@ -16,8 +16,8 @@ TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
 
 def get_redis(
     redis_type: RedisType,
-) -> Redis[str]:
-    return Redis(
+) -> client.Redis[str]:
+    return client.Redis(
         host=cfg.g(redis_type.cfg_key, "host"),
         username=cfg.g(redis_type.cfg_key, "user"),
         password=cfg.g(redis_type.cfg_key, "pwd"),
@@ -27,14 +27,14 @@ def get_redis(
 
 
 async def rint(
-    redis: Redis[str], key: str, throws: Optional[bool] = True
+    redis: client.Redis[str], key: str, throws: Optional[bool] = True
 ) -> Optional[int]:
     raw = await redis.get(key)
     return noneint_throws(raw, key) if throws else optint_or_none(raw)
 
 
 async def robj(
-    redis: Redis[str],
+    redis: client.Redis[str],
     key: str,
     cl: Type[TBaseModel],
     throws: Optional[bool] = True,
@@ -48,6 +48,6 @@ async def robj(
 
 
 async def trending_size(
-    redis: Redis[str], throws: Optional[bool] = True
+    redis: client.Redis[str], throws: Optional[bool] = True
 ) -> Optional[int]:
     return await rint(redis, Key.trending_size, throws)

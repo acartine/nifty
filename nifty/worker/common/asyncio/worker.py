@@ -101,5 +101,5 @@ def start(worker_ctor: Callable[[], NiftyWorker[T_Worker]], src_channel: Channel
     """
     Starts the worker
     """
-    log.log_init()
+    log.init()
     aiorun.run(worker_ctor().run(src_channel=src_channel))
