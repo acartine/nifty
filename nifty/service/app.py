@@ -91,7 +91,7 @@ def shorten(body: ShortenRequest):
 
 @app.route("/nifty/trending", methods={"GET"})
 def trending():
-    return store.get_trending().json(), 200
+    return jsonify(store.get_trending().dict()), 200
 
 
 @app.route("/<short_url>", methods=["GET"])

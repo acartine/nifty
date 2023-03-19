@@ -7,6 +7,7 @@ from flask.testing import FlaskClient
 import time
 
 from nifty.common.types import Action, ActionType, Meta, TrendEvent, TrendLinkEvent
+from nifty.service.store.types import Trending
 
 long_url_fixture = (
     "https://askubuntu.com/questions/986525/syntax-error-near-unexpected-token-newline-error-while"
@@ -49,7 +50,7 @@ class Psl(Thread):
 
             # see if there is another message so clients can assert queue size
             # and fail if there is more than expected
-            msg = pubsub.get_message(timeout=0.5)
+            msg = pubsub.get_message(timeout=0.1)
             if msg:
                 self.q.put(msg)
 
@@ -108,6 +109,17 @@ def test_create_and_lookup(client: FlaskClient, redis: Redis[str]):
     assert_action(msgs.get_nowait(), ActionType.get)
     assert_trend(msgs.get_nowait())
     assert_trend_link(msgs.get_nowait())
+
+    res = client.get("/nifty/trending")
+    assert res.json
+    trending = Trending.parse_obj(res.json)
+    assert trending.list
+    assert len(trending.list) == 1
+    assert trending.list[0].id
+    assert trending.list[0].created_at
+    assert trending.list[0].long_url == "https://www.google.com"
+    assert trending.list[0].short_url
+    assert trending.list[0].views == 1
 
 
 def test_reject_invalid_url(client: FlaskClient):
