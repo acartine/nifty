@@ -61,6 +61,7 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
         self, pubsub: PubSub, src_channel: Channel, listen_interval: float
     ):
         while True:
+            logging.debug(f"Listening to {src_channel} for {listen_interval} seconds")
             msg: Dict[
                 str, Any
             ] = await pubsub.get_message(  # pyright: ignore [reportUnknownMemberType]
@@ -90,7 +91,7 @@ class NiftyWorker(BaseNiftyWorker[T_Worker], ABC):
                 await pubsub.subscribe(  # pyright: ignore [reportUnknownMemberType]
                     src_channel
                 )
-                self.set_running(True)
+                logging.debug(f"Subscribed to {src_channel}")
                 await self.__listen(pubsub, src_channel, listen_interval)
         except CancelledError:
             logging.info("Cancelled")

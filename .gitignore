@@ -5,4 +5,4 @@ static
 venv
 .pyre/
 __pycache__
-
+.coverage

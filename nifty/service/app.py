@@ -15,12 +15,10 @@ from .base62 import base62_encode
 from .store import store
 from nifty.common.types import Link
 from nifty.common.helpers import timestamp_ms
-from nifty.common.log import log_init
+from nifty.common import log
 from nifty.common.types import Action, ActionType, Channel
 
-# TODO set up blueprints
-
-log_init()
+log.log_init()
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder=None)
@@ -93,7 +91,7 @@ def shorten(body: ShortenRequest):
 
 @app.route("/nifty/trending", methods={"GET"})
 def trending():
-    return store.get_trending().json(), 200
+    return jsonify(store.get_trending().dict()), 200
 
 
 @app.route("/<short_url>", methods=["GET"])
