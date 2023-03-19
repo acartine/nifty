@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-build docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-trend-local stack-run stack-stop test py-test-integration test-ui-dev
+.PHONY: build build-ui datastore-run datastore-stop db-apply db-apply-local db-reapply-all-local db-rollback-all db-rollback-all-local db-wipe docker-run docker-stop prepare py-build py-clean run-app-local run-dev run-ui-dev run-trend-local stack-run stack-stop test py-test-integration test-ui-dev
 	
 build-ui:
 	pushd ui && yarn install && rm -rf build && yarn build && popd 
@@ -34,20 +34,17 @@ db-wipe:
 db-wipe-soft:
 	pipenv run python -m nifty.util.db.clean
 
-docker-build: py-clean
+build-nifty: py-clean
 	docker build -t acartine/nifty:v1 ${ARGS} .
 
-trend-docker-build: py-clean
+dc-%:
+	bin/dc.sh $* store
+
+build-trend: py-clean
 	docker build . -f docker/worker.dockerfile --target worker-trend -t acartine/nifty-trend:v1
 
-trend-link-docker-build: py-clean
+build-trend-link: py-clean
 	docker build . -f docker/worker.dockerfile --target worker-trend-link -t acartine/nifty-trend-link:v1
-
-docker-run: docker-build
-	docker run --env-file .env -p 127.0.0.1:5000:5000 --name nifty -d acartine/nifty:v1
-
-docker-stop:
-	docker container stop nifty && docker container rm nifty
 
 prepare: py-clean 
 	rm -rf nifty/service/static && cp -r ui/build nifty/service/static
@@ -61,7 +58,8 @@ py-clean:
 run-app-local:
 	APP_CONTEXT_CFG=nifty PRIMARY_CFG=local pipenv run flask --debug --app nifty.service.app:app run
 
-run-dev: datastore-run run-app-local
+run-dev: 
+	bin/dc.sh up store && make run-app-local
 
 run-ui-dev:
 	pushd ui && yarn start
@@ -71,18 +69,6 @@ run-trend-link-local:
 
 run-trend-local:
 	APP_CONTEXT_CFG=trend pipenv run python -m nifty.worker.trend
-
-stack-run: docker-build trend-docker-build trend-link-docker-build
-	docker compose --profile all up --wait -d
-
-stack-stop:
-	docker compose --profile all down
-
-stack-base-run: docker-build
-	docker compose --profile base up --wait -d
-
-stack-base-stop:
-	docker compose --profile base down
 
 test: stack-stop db-wipe stack-run db-apply-local
 	pushd ui && yarn cypress run ${ARGS}; \
@@ -94,12 +80,14 @@ test: stack-stop db-wipe stack-run db-apply-local
 py-test-integration-raw:
 	PYTHONPATH=. APP_CONTEXT_CFG=integration_test PRIMARY_CFG=local pipenv run pytest tests_integration/all.py
 
-py-test-integration: stack-stop db-wipe datastore-run db-apply-local db-reapply-all-local py-test-integration-raw
+py-test-integration: 
+	bin/dc.sh up store && make db-apply-local && make db-reapply-all-local \
+&& bin/dc.sh up worker && py-test-integration-raw
 
 py-test-integration-full: 
 	make py-test-integration; \
 	e=$$?; \
-	make datastore-stop; \
+	bin/dc.sh down worker store; \
         exit $$e
 
 py-test-unit: py-clean py-sanity
@@ -121,16 +109,11 @@ py-lint-check:
 	pipenv run black nifty -t py311 --check
 
 py-sanity: py-lint-check py-type-check
-py-sanity-full: py-sanity py-test-integration
+py-sanity-full: py-test-unit py-test-integration
 
-sanity-full: py-test-integration-raw
-	make db-wipe-soft; \
+sanity-full: py-sanity-full db-wipe-soft
+	bin/dc.sh up web && pushd ui && yarn cypress run ${ARGS}; \
 	e=$$?; \
-	make stack-base-run; \
-	e=$$?; \
-	pushd ui && yarn cypress run ${ARGS}; \
-	e=$$?; \
-	popd; \
-	make stack-stop; \
+	popd && bin/dc.sh down worker web store; \
 	exit $$e
 

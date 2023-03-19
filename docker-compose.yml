@@ -2,6 +2,8 @@ version: '3'
 
 services:
   postgres:
+    profiles:
+      - store
     container_name: postgres
     image: postgres:15.1
     healthcheck:
@@ -21,6 +23,8 @@ services:
       - nw
 
   redis:
+    profiles:
+      - store
     container_name: redis
     image: redis:7.0.7
     healthcheck:
@@ -37,6 +41,8 @@ services:
       - nw
 
   redis-cache:
+    profiles:
+      - store
     container_name: redis-cache
     image: redis:7.0.7
     healthcheck:
@@ -55,7 +61,6 @@ services:
   trend:
     profiles:
       - worker
-      - all
     container_name: trend
     image: acartine/nifty-trend:v1
     environment:
@@ -74,7 +79,6 @@ services:
   trend-link:
     profiles:
       - worker
-      - all
     container_name: trend-link
     image: acartine/nifty-trend-link:v1
     environment:
@@ -92,8 +96,7 @@ services:
 
   nifty:
     profiles:
-      - base
-      - all
+      - web
     container_name: nifty
     image: acartine/nifty:v1
     ports:
@@ -121,8 +124,7 @@ services:
 
   nginx:
     profiles:
-      - base
-      - all
+      - web
     container_name: nginx
     image: nginx:1.23.3
     volumes:
