@@ -15,12 +15,19 @@ TBaseModel = TypeVar("TBaseModel", bound=BaseModel)
 
 
 def get_redis(
-    redis_type: RedisType,
+    redis_type: RedisType, *, cfg_creds_section: Optional[str] = None
 ) -> client.Redis[str]:
+    creds_section = redis_type.cfg_key
+    user_key = "user"
+    pwd_key = "pwd"
+    if cfg_creds_section:
+        creds_section = cfg_creds_section
+        user_key = "redis_user"
+        pwd_key = "redis_pwd"
     return client.Redis(
         host=cfg.g(redis_type.cfg_key, "host"),
-        username=cfg.g(redis_type.cfg_key, "user"),
-        password=cfg.g(redis_type.cfg_key, "pwd"),
+        username=cfg.g(creds_section, user_key),
+        password=cfg.g(creds_section, pwd_key),
         port=cfg.gint_fb(redis_type.cfg_key, "port", 6379),
         decode_responses=True,
     )

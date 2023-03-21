@@ -1,14 +1,14 @@
 from typing import Any, Optional
 import unittest
-from unittest import mock
-from unittest.mock import Mock, patch
+from unittest import IsolatedAsyncioTestCase, mock
+from unittest.mock import Mock, patch, AsyncMock
 from pydantic import BaseModel
 
-from nifty.common import redis_helpers
+from nifty.common.asyncio import redis_helpers
 from nifty.common.types import Key, RedisType
 
 
-class TestRedisHelpers(unittest.TestCase):
+class TestRedisHelpers(IsolatedAsyncioTestCase):
     def assert_client_with_keys(
         self,
         mock_redis: Mock,
@@ -40,7 +40,7 @@ class TestRedisHelpers(unittest.TestCase):
 
     @patch("nifty.common.cfg.g")
     @patch("nifty.common.cfg.gint_fb")
-    @patch("redis.client.Redis")
+    @patch("redis.asyncio.client.Redis")
     def test_get_redis_client_std(
         self, mock_redis: Mock, mock_gint_fb: Mock, mock_g: Mock
     ):
@@ -48,7 +48,7 @@ class TestRedisHelpers(unittest.TestCase):
 
     @patch("nifty.common.cfg.g")
     @patch("nifty.common.cfg.gint_fb")
-    @patch("redis.client.Redis")
+    @patch("redis.asyncio.client.Redis")
     def test_get_redis_client_cache(
         self, mock_redis: Mock, mock_gint_fb: Mock, mock_g: Mock
     ):
@@ -56,7 +56,7 @@ class TestRedisHelpers(unittest.TestCase):
 
     @patch("nifty.common.cfg.g")
     @patch("nifty.common.cfg.gint_fb")
-    @patch("redis.client.Redis")
+    @patch("redis.asyncio.client.Redis")
     def test_get_redis_client_cache_with_creds(
         self, mock_redis: Mock, mock_gint_fb: Mock, mock_g: Mock
     ):
@@ -64,59 +64,68 @@ class TestRedisHelpers(unittest.TestCase):
             mock_redis, mock_gint_fb, mock_g, RedisType.CACHE, "override_creds_section"
         )
 
-    def test_rint_throws(self):
-        with patch("redis.client.Redis") as mock_redis:  # type: ignore
+    async def test_rint_throws(self):
+        with patch(
+            "redis.asyncio.client.Redis",
+        ) as mock_redis:  # type: ignore
+            mock_redis.get = AsyncMock()
             mock_redis.get.return_value = "123"
-            self.assertEqual(redis_helpers.rint_throws(mock_redis, "foo"), 123)
-            mock_redis.get.assert_called_once_with("foo")
+            actual_value = await redis_helpers.rint(mock_redis, "foo")
+            self.assertEqual(actual_value, 123)
 
             mock_redis.get.return_value = None
             with self.assertRaises(Exception):
-                redis_helpers.rint_throws(mock_redis, "foo")
+                await redis_helpers.rint(mock_redis, "foo")
 
             mock_redis.get.return_value = "abc"
             with self.assertRaises(ValueError):
-                redis_helpers.rint_throws(mock_redis, "foo")
+                await redis_helpers.rint(mock_redis, "foo")
 
-    def test_rint(self):
-        with patch("redis.client.Redis") as mock_redis:  # type: ignore
+    async def test_rint(self):
+        with patch("redis.asyncio.client.Redis") as mock_redis:  # type: ignore
+            mock_redis.get = AsyncMock()
             mock_redis.get.return_value = "123"
-            self.assertEqual(redis_helpers.rint(mock_redis, "foo"), 123)
-            mock_redis.get.assert_called_once_with("foo")
+            actual = await redis_helpers.rint(mock_redis, "foo", throws=False)
+            self.assertEqual(actual, 123)
 
             mock_redis.get.return_value = None
-            self.assertIsNone(redis_helpers.rint(mock_redis, "foo"))
+            actual = await redis_helpers.rint(mock_redis, "foo", throws=False)
+            self.assertIsNone(actual)
 
             mock_redis.get.return_value = "abc"
             with self.assertRaises(ValueError):
-                redis_helpers.rint(mock_redis, "foo")
+                await redis_helpers.rint(mock_redis, "foo", throws=False)
 
-    def test_robj(self):
+    async def test_robj(self):
         class SomeClass(BaseModel):
             foo: str
 
-        with patch("redis.client.Redis") as mock_redis:
+        with patch("redis.asyncio.client.Redis") as mock_redis:
+            mock_redis.hgetall = AsyncMock()
             mock_redis.hgetall.return_value = {"foo": "bar"}
-            actual = redis_helpers.robj(mock_redis, "foo", SomeClass)
+            actual = await redis_helpers.robj(mock_redis, "foo", SomeClass)
             self.assertEqual(actual, SomeClass(foo="bar"))
-
             mock_redis.hgetall.return_value = None
             with self.assertRaises(Exception):
-                redis_helpers.robj(mock_redis, "foo", SomeClass)
+                await redis_helpers.robj(mock_redis, "foo", SomeClass)
 
-            self.assertIsNone(redis_helpers.robj(mock_redis, "foo", SomeClass, False))
+            actual = await redis_helpers.robj(mock_redis, "foo", SomeClass, False)
+            self.assertIsNone(actual)
 
-    def test_trending_size(self):
+    async def test_trending_size(self):
         def mock_redis_side_effect(*args: Any, **_kwargs: Any):
             if args[0] == Key.trending_size:
                 return 123
             raise Exception("Unexpected call")
 
-        with patch("redis.client.Redis") as mock_redis:
+        with patch("redis.asyncio.client.Redis") as mock_redis:
+            mock_redis.get = AsyncMock()
             mock_redis.get.side_effect = mock_redis_side_effect
-            self.assertEqual(redis_helpers.trending_size(mock_redis), 123)
+            actual = await redis_helpers.trending_size(mock_redis)
+
+            self.assertEqual(actual, 123)
 
             mock_redis.get.side_effect = None
             mock_redis.get.return_value = None
             with self.assertRaises(Exception):
-                redis_helpers.trending_size(mock_redis)
+                await redis_helpers.trending_size(mock_redis)

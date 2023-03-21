@@ -9,14 +9,24 @@ _OrignalFunc = Callable[..., Coroutine[Any, Any, _T]]
 
 def retry(
     max_tries: int,
-    stack_id: Optional[str] = __name__,
+    stack_id: str,
     first_delay: Optional[float] = 0.1,
 ) -> Callable[[_OrignalFunc[_T]], _OrignalFunc[_T]]:
-    if stack_id is None:
-        raise Exception("stack_id cannot be None")
+    """
+    Create callable decorator to retry a function
 
-    if first_delay is None or first_delay <= 0:
-        raise Exception("first_delay must be > 0")
+    each delay is the previous delay * attempt number
+    a delay of 0 means all retries will be immediate.  Not recommended.
+
+    param max_tries: number of times to retry >= 1
+    param stack_id: stack id to use for logging
+    first_delay: delay in seconds before first retry >= 0
+    """
+    if max_tries < 1:
+        raise ValueError("max_tries must be >= 1")
+
+    if not first_delay or first_delay < 0:
+        raise ValueError("first_delay must be >= 0")
 
     def decorator(func: _OrignalFunc[_T]) -> _OrignalFunc[_T]:
         @functools.wraps(func)
